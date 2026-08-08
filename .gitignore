@@ -1,0 +1,11 @@
+.env
+.DS_Store
+Thumbs.db
+/media/*
+!/media/.gitkeep
+/storage/logs/*
+!/storage/logs/.gitkeep
+/storage/tmp/*
+!/storage/tmp/.gitkeep
+*.log
+
