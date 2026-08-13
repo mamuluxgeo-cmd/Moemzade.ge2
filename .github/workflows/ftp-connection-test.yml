@@ -11,11 +11,9 @@ jobs:
     name: Test secure FTP connection
     runs-on: ubuntu-latest
     timeout-minutes: 5
-
     steps:
       - name: Install FTP client
         run: sudo apt-get update && sudo apt-get install --yes lftp
-
       - name: Connect and list deployment directory
         env:
           FTP_SERVER: ${{ secrets.FTP_SERVER }}
@@ -36,3 +34,4 @@ jobs:
           bye
           LFTP_COMMANDS
           echo "Secure FTP connection succeeded."
+

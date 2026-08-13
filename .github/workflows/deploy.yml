@@ -1,0 +1,55 @@
+name: Deploy production
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install secure FTP client
+        run: sudo apt-get update && sudo apt-get install --yes lftp
+
+      - name: Upload application files
+        env:
+          FTP_SERVER: ${{ secrets.FTP_SERVER }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          lftp <<LFTP_COMMANDS
+          set cmd:fail-exit yes
+          set net:max-retries 2
+          set net:timeout 30
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ssl:verify-certificate yes
+          open --user "$FTP_USERNAME" --password "$FTP_PASSWORD" "ftp://$FTP_SERVER"
+          mirror --reverse --verbose \
+            --exclude-glob .git/ \
+            --exclude-glob .github/ \
+            --exclude-glob .env \
+            --exclude-glob .env.* \
+            --exclude-glob media/ \
+            --exclude-glob storage/logs/ \
+            --exclude-glob storage/tmp/ \
+            --exclude-glob tests/ \
+            --exclude-glob README.md \
+            ./ ./
+          bye
+          LFTP_COMMANDS
+
+      - name: Verify public homepage
+        run: curl --fail --silent --show-error --retry 3 https://moemzade.ge/ > /dev/null
