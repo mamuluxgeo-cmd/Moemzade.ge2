@@ -1,0 +1,38 @@
+name: FTP Connection Test
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test-ftp-connection:
+    name: Test secure FTP connection
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Install FTP client
+        run: sudo apt-get update && sudo apt-get install --yes lftp
+
+      - name: Connect and list deployment directory
+        env:
+          FTP_SERVER: ${{ secrets.FTP_SERVER }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          lftp <<LFTP_COMMANDS
+          set cmd:fail-exit yes
+          set net:max-retries 1
+          set net:timeout 20
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ssl:verify-certificate yes
+          open --user "$FTP_USERNAME" --password "$FTP_PASSWORD" "ftp://$FTP_SERVER"
+          cls -1
+          bye
+          LFTP_COMMANDS
+          echo "Secure FTP connection succeeded."
