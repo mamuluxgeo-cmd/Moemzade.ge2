@@ -547,6 +547,28 @@ final class Repository
         }
     }
 
+    public function deleteCatalogCategory(int $id): void
+    {
+        $category = $this->catalogRow('catalog_categories', $id);
+        $name = (string) $category['name'];
+        $teacherStatement = $this->db->prepare('SELECT COUNT(*) FROM teachers WHERE category = :name');
+        $teacherStatement->execute(['name' => $name]);
+        $teacherCount = (int) $teacherStatement->fetchColumn();
+        $requestStatement = $this->db->prepare('SELECT COUNT(*) FROM mentor_requests WHERE category = :name');
+        $requestStatement->execute(['name' => $name]);
+        $requestCount = (int) $requestStatement->fetchColumn();
+
+        if ($teacherCount > 0 || $requestCount > 0) {
+            throw new \RuntimeException(
+                "სფერო ვერ წაიშლება: მას იყენებს {$teacherCount} მასწავლებელი და {$requestCount} განცხადება. ჯერ გადაიტანეთ ისინი სხვა სფეროში."
+            );
+        }
+
+        $statement = $this->db->prepare('DELETE FROM catalog_categories WHERE id = :id');
+        $statement->execute(['id' => $id]);
+        $this->filterOptionsCache = null;
+    }
+
     public function createCatalogRegion(string $name, int $sortOrder): int
     {
         $name = self::catalogName($name, 120);
