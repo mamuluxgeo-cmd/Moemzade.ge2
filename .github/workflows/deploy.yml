@@ -2,6 +2,10 @@ name: Deploy production
 
 on:
   workflow_dispatch:
+  workflow_run:
+    workflows: ["Quality"]
+    types: [completed]
+    branches: [main]
 
 permissions:
   contents: read
@@ -12,11 +16,14 @@ concurrency:
 
 jobs:
   deploy:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment: production
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - name: Install secure FTP client
         run: sudo apt-get update && sudo apt-get install --yes lftp
