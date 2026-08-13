@@ -407,6 +407,33 @@ function category_icon(string $category): string
     };
 }
 
+/** @return array{0: int, 1: int} */
+function category_illustration_position(string $category): array
+{
+    $index = match ($category) {
+        'სასკოლო საგნები' => 0,
+        'ენები' => 1,
+        'მართვა' => 2,
+        'სხვა' => 3,
+        'ტექნოლოგია' => 4,
+        'მუსიკა' => 5,
+        'ცეკვა' => 6,
+        'სილამაზე' => 7,
+        'შემოქმედება' => 8,
+        'ხელსაქმე', 'ხელსაქმე / ტექნიკური' => 9,
+        'სპორტი და ჯანმრთელობა' => 10,
+        'კულინარია', 'ყოფა და ლაიფსტაილი' => 11,
+        'თეატრი და მედია' => 12,
+        'ბიზნესი და ფინანსები' => 13,
+        'მარკეტინგი და გაყიდვები' => 14,
+        'სამართალი და იურისპრუდენცია' => 15,
+        'კარიერული განვითარება და მენეჯმენტი' => 16,
+        default => 17,
+    };
+
+    return [($index % 5) * 25, intdiv($index, 5) * 33];
+}
+
 function teacher_status_label(string $status): string
 {
     return match ($status) {
