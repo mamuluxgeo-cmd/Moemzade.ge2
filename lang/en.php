@@ -31,7 +31,7 @@ return [
     'admin.password_must_change' => 'The new password must differ from the current password.',
     'admin.password_changed' => 'Password changed. Sign in with the new password.', 'admin.logout' => 'Sign out',
     'admin.add_teacher' => 'Add teacher', 'nav.register' => 'Add profile',
-    'home.categories_kicker' => 'Categories', 'home.categories_title' => 'Find a teacher by category', 'home.category_count' => ':count profiles',
+    'home.categories_kicker' => 'Categories', 'home.categories_title' => 'Find a teacher by category', 'home.category_count' => ':count profiles', 'home.categories_all' => 'All categories', 'home.category_popular' => 'Popular',
     'price.type' => 'Price type', 'price.hour' => 'Per hour', 'price.month' => 'Per month', 'price.course' => 'Course',
     'price.lesson' => 'Lesson', 'price.negotiable' => 'Negotiable', 'price.hour_short' => 'hr', 'price.month_short' => 'mo',
     'price.course_short' => 'course', 'price.lesson_short' => 'lesson',

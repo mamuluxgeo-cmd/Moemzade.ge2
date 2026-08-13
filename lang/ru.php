@@ -31,7 +31,7 @@ return [
     'admin.password_must_change' => 'Новый пароль должен отличаться от текущего.',
     'admin.password_changed' => 'Пароль изменён. Войдите с новым паролем.', 'admin.logout' => 'Выйти',
     'admin.add_teacher' => 'Добавить преподавателя', 'nav.register' => 'Добавить профиль',
-    'home.categories_kicker' => 'Направления', 'home.categories_title' => 'Найдите преподавателя по направлению', 'home.category_count' => 'Профилей: :count',
+    'home.categories_kicker' => 'Направления', 'home.categories_title' => 'Найдите преподавателя по направлению', 'home.category_count' => 'Профилей: :count', 'home.categories_all' => 'Все направления', 'home.category_popular' => 'Популярное',
     'price.type' => 'Тип цены', 'price.hour' => 'За час', 'price.month' => 'За месяц', 'price.course' => 'Курс',
     'price.lesson' => 'Занятие', 'price.negotiable' => 'По договорённости', 'price.hour_short' => 'ч', 'price.month_short' => 'мес',
     'price.course_short' => 'курс', 'price.lesson_short' => 'занятие',
