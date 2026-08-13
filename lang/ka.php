@@ -74,6 +74,8 @@ return [
     'home.categories_kicker' => 'მიმართულებები',
     'home.categories_title' => 'იპოვე მასწავლებელი სფეროს მიხედვით',
     'home.category_count' => ':count პროფილი',
+    'home.categories_all' => 'ყველა მიმართულება',
+    'home.category_popular' => 'პოპულარული',
     'price.type' => 'ფასის ტიპი',
     'price.hour' => 'საათში', 'price.month' => 'თვეში', 'price.course' => 'კურსი',
     'price.lesson' => 'გაკვეთილი', 'price.negotiable' => 'შეთანხმებით',

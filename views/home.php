@@ -40,11 +40,27 @@
 </section>
 
 <?php if ($categories): ?>
+<?php
+$displayCategories = $categories;
+usort($displayCategories, static fn (array $a, array $b): int => ((int) $b['total']) <=> ((int) $a['total']));
+$popularLeft = 3;
+?>
 <section class="section category-section">
     <div class="container">
-        <div class="section-heading"><div><span><?= e(t('home.categories_kicker')) ?></span><h2><?= e(t('home.categories_title')) ?></h2></div><a href="/teachers"><?= e(t('common.all')) ?> →</a></div>
+        <div class="section-heading category-heading"><div><span><?= e(t('home.categories_kicker')) ?></span><h2><?= e(t('home.categories_title')) ?></h2></div><a class="category-all-link" href="/teachers"><?= e(t('home.categories_all')) ?><span aria-hidden="true">→</span></a></div>
         <div class="category-grid">
-            <?php foreach ($categories as $item): ?><a class="category-card" href="/teachers?category=<?= rawurlencode($item['category']) ?>"><span><?= category_icon($item['category']) ?></span><strong><?= e($item['category']) ?></strong><small><?= e(t('home.category_count', ['count' => $item['total']])) ?></small></a><?php endforeach; ?>
+            <?php foreach ($displayCategories as $item): ?>
+                <?php
+                $total = (int) $item['total'];
+                $isPopular = $total > 0 && $popularLeft-- > 0;
+                ?>
+                <a class="category-card<?= $total === 0 ? ' category-card-empty' : '' ?>" href="/teachers?category=<?= rawurlencode($item['category']) ?>" aria-label="<?= e($item['category'] . ' — ' . t('home.category_count', ['count' => $total])) ?>">
+                    <span class="category-icon" aria-hidden="true"><?= category_icon($item['category']) ?></span>
+                    <?php if ($isPopular): ?><span class="category-popular"><?= e(t('home.category_popular')) ?></span><?php endif; ?>
+                    <strong><?= e($item['category']) ?></strong>
+                    <span class="category-card-footer"><small><?= e(t('home.category_count', ['count' => $total])) ?></small><i aria-hidden="true">→</i></span>
+                </a>
+            <?php endforeach; ?>
         </div>
     </div>
 </section>
