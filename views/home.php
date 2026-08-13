@@ -56,7 +56,11 @@ $popularLeft = 3;
                 $artPosition = category_illustration_position($item['category']);
                 ?>
                 <a class="category-card<?= $total === 0 ? ' category-card-empty' : '' ?>" href="/teachers?category=<?= rawurlencode($item['category']) ?>" aria-label="<?= e($item['category'] . ' — ' . t('home.category_count', ['count' => $total])) ?>">
-                    <span class="category-art" aria-hidden="true" style="--art-x: <?= (int) $artPosition[0] ?>%; --art-y: <?= (int) $artPosition[1] ?>%"></span>
+                    <?php if (!empty($item['image_url'])): ?>
+                        <span class="category-art category-art-uploaded" aria-hidden="true" style="background-image: url('<?= e($item['image_url']) ?>')"></span>
+                    <?php else: ?>
+                        <span class="category-art" aria-hidden="true" style="--art-x: <?= (int) $artPosition[0] ?>%; --art-y: <?= (int) $artPosition[1] ?>%"></span>
+                    <?php endif; ?>
                     <?php if ($isPopular): ?><span class="category-popular"><?= e(t('home.category_popular')) ?></span><?php endif; ?>
                     <strong><?= e($item['category']) ?></strong>
                     <span class="category-card-footer"><small><?= e(t('home.category_count', ['count' => $total])) ?></small><i aria-hidden="true">→</i></span>

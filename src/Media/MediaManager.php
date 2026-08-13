@@ -66,6 +66,55 @@ final class MediaManager
         return $saved;
     }
 
+    /** @param array<string, mixed> $upload
+     *  @return array{variant:string,driver:string,key:string,url:string,width:int,height:int,bytes:int,mime:string}
+     */
+    public function storeCategoryPhoto(int $categoryId, array $upload): array
+    {
+        if (($upload['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+            throw new RuntimeException('ფოტოს ატვირთვა ვერ მოხერხდა.');
+        }
+        $source = (string) ($upload['tmp_name'] ?? '');
+        if ($source === '' || !is_uploaded_file($source)) {
+            throw new RuntimeException('ატვირთული ფაილი არასწორია.');
+        }
+
+        $optimizer = new ImageOptimizer();
+        $optimized = $optimizer->optimize($source, min((int) $this->config['max_upload_bytes'], 2 * 1024 * 1024));
+        $selected = null;
+        foreach ($optimized as $variant) {
+            if ($variant['variant'] === 'profile') {
+                $selected = $variant;
+                break;
+            }
+        }
+        $selected ??= $optimized[0] ?? null;
+        if (!is_array($selected)) {
+            throw new RuntimeException('ფოტოს დამუშავება ვერ მოხერხდა.');
+        }
+
+        $storage = StorageFactory::make($this->config);
+        $key = 'categories/' . $categoryId . '/' . bin2hex(random_bytes(10)) . '.webp';
+        try {
+            return [
+                'variant' => 'category',
+                'driver' => $storage->driver(),
+                'key' => $key,
+                'url' => $storage->put($key, $selected['path'], $selected['mime']),
+                'width' => $selected['width'],
+                'height' => $selected['height'],
+                'bytes' => $selected['bytes'],
+                'mime' => $selected['mime'],
+            ];
+        } finally {
+            foreach ($optimized as $variant) {
+                if (is_file($variant['path'])) {
+                    unlink($variant['path']);
+                }
+            }
+        }
+    }
+
     /** @param list<array<string, mixed>> $media */
     public function deleteStored(array $media): void
     {

@@ -14,6 +14,17 @@
     <div class="taxonomy-list">
         <?php foreach ($categories as $category): ?>
             <article class="admin-panel taxonomy-row-card">
+                <div class="category-image-admin">
+                    <div class="category-image-preview">
+                        <?php if (!empty($category['image_url'])): ?><img src="<?= e($category['image_url']) ?>" alt="<?= e($category['name']) ?>"><?php else: ?><span>ფოტო არ არის</span><?php endif; ?>
+                    </div>
+                    <form action="/admin/categories/<?= (int) $category['id'] ?>/image" method="post" enctype="multipart/form-data" class="category-image-form">
+                        <?= csrf_field() ?>
+                        <label><span>კატეგორიის ფოტო</span><input type="file" name="category_image" accept="image/jpeg,image/png,image/webp" required><small>რეკომენდებული: 800 × 600 px (4:3), JPG/PNG/WebP, მაქს. 2 MB.</small></label>
+                        <button class="button button-primary" type="submit"><?= !empty($category['image_url']) ? 'ფოტოს შეცვლა' : 'ფოტოს ატვირთვა' ?></button>
+                    </form>
+                    <?php if (!empty($category['image_url'])): ?><form action="/admin/categories/<?= (int) $category['id'] ?>/image" method="post" onsubmit="return confirm('წავშალოთ კატეგორიის ფოტო?')"><?= csrf_field() ?><input type="hidden" name="remove_image" value="1"><button class="button category-image-remove" type="submit">ფოტოს წაშლა</button></form><?php endif; ?>
+                </div>
                 <form action="/admin/categories/<?= (int) $category['id'] ?>" method="post" class="taxonomy-row-form">
                     <?= csrf_field() ?>
                     <label class="taxonomy-name-field"><span>სფერო</span><input name="name" value="<?= e($category['name']) ?>" maxlength="120" required></label>
