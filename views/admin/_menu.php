@@ -1,4 +1,24 @@
-<div class="admin-toolbar">
-    <nav><a href="/admin"><?= e(t('admin.dashboard')) ?></a><a href="/admin/teachers"><?= e(t('admin.teachers')) ?></a><a href="/admin/teachers?status=draft"><?= e(t('admin.applications')) ?></a><a href="/admin/mentor-requests"><?= e(t('admin.mentor_requests')) ?></a><a href="/admin/mentor-requests?status=draft"><?= e(t('mentor.pending_requests')) ?></a><a href="/admin/categories"><?= e(t('admin.categories')) ?></a><a href="/admin/regions"><?= e(t('admin.regions')) ?></a><a href="/admin/comments"><?= e(t('admin.comments')) ?></a><a href="/admin/security"><?= e(t('admin.security')) ?></a></nav>
+<?php
+$adminPath = parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/admin'), PHP_URL_PATH) ?: '/admin';
+$adminLinks = [
+    ['/admin', t('admin.dashboard'), '⌂'],
+    ['/admin/teachers', t('admin.teachers'), '◉'],
+    ['/admin/teachers?status=draft', t('admin.applications'), '✦'],
+    ['/admin/mentor-requests', t('admin.mentor_requests'), '▤'],
+    ['/admin/mentor-requests?status=draft', t('mentor.pending_requests'), '◷'],
+    ['/admin/categories', t('admin.categories'), '▦'],
+    ['/admin/regions', t('admin.regions'), '⌖'],
+    ['/admin/comments', t('admin.comments'), '◇'],
+    ['/admin/security', t('admin.security'), '⌘'],
+];
+?>
+<div class="admin-toolbar" aria-label="ადმინისტრაციის მენიუ">
+    <a class="admin-toolbar-brand" href="/admin"><span>M</span><strong>მართვის პანელი</strong></a>
+    <nav>
+        <?php foreach ($adminLinks as [$url, $label, $icon]): ?>
+            <?php $linkPath = parse_url($url, PHP_URL_PATH) ?: '/admin'; $active = $linkPath === '/admin' ? $adminPath === '/admin' : str_starts_with($adminPath, $linkPath); ?>
+            <a class="<?= $active ? 'active' : '' ?>" href="<?= e($url) ?>" <?= $active ? 'aria-current="page"' : '' ?>><i aria-hidden="true"><?= e($icon) ?></i><span><?= e($label) ?></span></a>
+        <?php endforeach; ?>
+    </nav>
     <form action="/admin/logout" method="post"><?= csrf_field() ?><button class="button button-muted" type="submit"><?= e(t('admin.logout')) ?></button></form>
 </div>

@@ -1,6 +1,7 @@
 <?php $item = isset($cardTeacher) && is_array($cardTeacher) ? $cardTeacher : $teacher; ?>
 <article class="teacher-card">
     <a href="/teacher/<?= rawurlencode((string) $item['slug']) ?>">
+        <span class="teacher-card-clip" aria-hidden="true"></span>
         <div class="teacher-photo">
             <?php if (!empty($item['photo_url'])): ?>
                 <img src="<?= e($item['photo_url']) ?>" alt="<?= e(localized($item, 'name')) ?>" loading="lazy" width="720" height="720">
@@ -14,6 +15,7 @@
             <h3><?= e(localized($item, 'name')) ?></h3>
             <p><?= e(localized($item, 'profession')) ?></p>
             <div class="teacher-meta"><span>📍 <?= e($item['settlement'] ?: $item['region']) ?></span><?php if ($item['format_online']): ?><span>◉ <?= e(t('search.online')) ?></span><?php endif; ?></div>
+            <span class="teacher-card-arrow" aria-hidden="true">→</span>
         </div>
     </a>
 </article>

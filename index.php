@@ -492,6 +492,27 @@ try {
         redirect('/admin/categories');
     }
 
+    if ($method === 'POST' && preg_match('#^/admin/categories/(\d+)/delete$#', $path, $matches)) {
+        require_admin();
+        verify_csrf();
+        $categoryId = (int) $matches[1];
+        try {
+            $oldMedia = $repository->categoryMedia($categoryId);
+            $repository->deleteCatalogCategory($categoryId);
+            if ($oldMedia !== null) {
+                try {
+                    (new MediaManager($config['media']))->deleteStored([$oldMedia]);
+                } catch (\Throwable $cleanupException) {
+                    error_log($cleanupException->__toString());
+                }
+            }
+            flash('success', 'სფერო წარმატებით წაიშალა.');
+        } catch (\Throwable $exception) {
+            flash('error', $exception->getMessage());
+        }
+        redirect('/admin/categories');
+    }
+
     if ($path === '/admin/regions' && $method === 'GET') {
         require_admin();
         view('admin/regions', [

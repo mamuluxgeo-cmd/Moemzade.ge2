@@ -33,6 +33,11 @@
                     <div class="taxonomy-usage"><strong><?= (int) $category['request_count'] ?></strong><span>განცხადება</span></div>
                     <button class="button button-muted" type="submit">შენახვა</button>
                 </form>
+                <form action="/admin/categories/<?= (int) $category['id'] ?>/delete" method="post" class="taxonomy-delete-form" onsubmit="return confirm('ნამდვილად წავშალოთ სფერო „<?= e($category['name']) ?>“? ამ მოქმედების გაუქმება შეუძლებელია.')">
+                    <?= csrf_field() ?>
+                    <p><?php if ((int) $category['teacher_count'] + (int) $category['request_count'] > 0): ?>წაშლამდე ამ სფეროზე მიბმული ჩანაწერები სხვა სფეროში გადაიტანეთ.<?php else: ?>სფერო ცარიელია და მისი უსაფრთხოდ წაშლა შესაძლებელია.<?php endif; ?></p>
+                    <button class="button taxonomy-delete-button" type="submit">სფეროს წაშლა</button>
+                </form>
             </article>
         <?php endforeach; ?>
     </div>
