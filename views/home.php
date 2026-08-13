@@ -53,9 +53,10 @@ $popularLeft = 3;
                 <?php
                 $total = (int) $item['total'];
                 $isPopular = $total > 0 && $popularLeft-- > 0;
+                $artPosition = category_illustration_position($item['category']);
                 ?>
                 <a class="category-card<?= $total === 0 ? ' category-card-empty' : '' ?>" href="/teachers?category=<?= rawurlencode($item['category']) ?>" aria-label="<?= e($item['category'] . ' — ' . t('home.category_count', ['count' => $total])) ?>">
-                    <span class="category-icon" aria-hidden="true"><?= category_icon($item['category']) ?></span>
+                    <span class="category-art" aria-hidden="true" style="--art-x: <?= (int) $artPosition[0] ?>%; --art-y: <?= (int) $artPosition[1] ?>%"></span>
                     <?php if ($isPopular): ?><span class="category-popular"><?= e(t('home.category_popular')) ?></span><?php endif; ?>
                     <strong><?= e($item['category']) ?></strong>
                     <span class="category-card-footer"><small><?= e(t('home.category_count', ['count' => $total])) ?></small><i aria-hidden="true">→</i></span>
