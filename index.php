@@ -459,6 +459,39 @@ try {
         redirect('/admin/categories');
     }
 
+    if ($method === 'POST' && preg_match('#^/admin/categories/(\d+)/image$#', $path, $matches)) {
+        require_admin();
+        verify_csrf();
+        $categoryId = (int) $matches[1];
+        try {
+            $manager = new MediaManager($config['media']);
+            $oldMedia = $repository->categoryMedia($categoryId);
+
+            if (isset($_POST['remove_image'])) {
+                $repository->deleteCategoryMedia($categoryId);
+                if ($oldMedia !== null) {
+                    $manager->deleteStored([$oldMedia]);
+                }
+                flash('success', 'კატეგორიის ფოტო წაიშალა.');
+            } else {
+                $stored = $manager->storeCategoryPhoto($categoryId, $_FILES['category_image'] ?? []);
+                try {
+                    $repository->saveCategoryMedia($categoryId, $stored);
+                } catch (\Throwable $exception) {
+                    $manager->deleteStored([$stored]);
+                    throw $exception;
+                }
+                if ($oldMedia !== null) {
+                    $manager->deleteStored([$oldMedia]);
+                }
+                flash('success', 'კატეგორიის ფოტო განახლდა.');
+            }
+        } catch (\Throwable $exception) {
+            flash('error', $exception->getMessage());
+        }
+        redirect('/admin/categories');
+    }
+
     if ($path === '/admin/regions' && $method === 'GET') {
         require_admin();
         view('admin/regions', [

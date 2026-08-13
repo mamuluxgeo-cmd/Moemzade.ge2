@@ -11,6 +11,7 @@ final class Repository
 {
     /** @var array{categories:list<string>,regions:list<string>,settlements:list<string>,region_settlements:array<string,list<string>>,languages:list<string>,subcategories:list<string>,category_subcategories:array<string,list<string>>}|null */
     private ?array $filterOptionsCache = null;
+    private bool $categoryMediaReady = false;
 
     /** @param array<string, mixed> $taxonomy */
     public function __construct(private readonly PDO $db, private readonly array $taxonomy = [])
@@ -63,9 +64,10 @@ final class Repository
         )->fetchAll();
     }
 
-    /** @return list<array{category:string,total:int}> */
+    /** @return list<array{category:string,total:int,image_url:string}> */
     public function categorySummaries(int $limit = 30): array
     {
+        $this->ensureCategoryMediaTable();
         $limit = max(1, min(30, $limit));
         $rows = $this->db->query(
             "SELECT category, COUNT(*) AS total
@@ -80,11 +82,22 @@ final class Repository
             $totals[(string) $row['category']] = (int) $row['total'];
         }
 
+        $imageRows = $this->db->query(
+            'SELECT c.name, m.public_url
+             FROM catalog_categories c
+             LEFT JOIN catalog_category_media m ON m.category_id = c.id'
+        )->fetchAll();
+        $images = [];
+        foreach ($imageRows as $row) {
+            $images[(string) $row['name']] = (string) ($row['public_url'] ?? '');
+        }
+
         $summaries = [];
         foreach ($this->filterOptions()['categories'] as $category) {
             $summaries[] = [
                 'category' => $category,
                 'total' => $totals[$category] ?? 0,
+                'image_url' => $images[$category] ?? '',
             ];
         }
 
@@ -371,13 +384,87 @@ final class Repository
     /** @return list<array<string, mixed>> */
     public function adminCatalogCategories(): array
     {
+        $this->ensureCategoryMediaTable();
         return $this->db->query(
             'SELECT c.*,
+                    cm.public_url AS image_url,
+                    cm.storage_key AS image_storage_key,
+                    cm.storage_driver AS image_storage_driver,
                     (SELECT COUNT(*) FROM teachers t WHERE t.category = c.name) AS teacher_count,
-                    (SELECT COUNT(*) FROM mentor_requests m WHERE m.category = c.name) AS request_count
+                    (SELECT COUNT(*) FROM mentor_requests mr WHERE mr.category = c.name) AS request_count
              FROM catalog_categories c
+             LEFT JOIN catalog_category_media cm ON cm.category_id = c.id
              ORDER BY c.sort_order, c.name'
         )->fetchAll();
+    }
+
+    /** @return array<string, mixed>|null */
+    public function categoryMedia(int $categoryId): ?array
+    {
+        $this->ensureCategoryMediaTable();
+        $statement = $this->db->prepare('SELECT * FROM catalog_category_media WHERE category_id = :category_id LIMIT 1');
+        $statement->execute(['category_id' => $categoryId]);
+        $row = $statement->fetch();
+        return is_array($row) ? $row : null;
+    }
+
+    /** @param array<string, mixed> $media */
+    public function saveCategoryMedia(int $categoryId, array $media): void
+    {
+        $this->ensureCategoryMediaTable();
+        $this->catalogRow('catalog_categories', $categoryId);
+        $statement = $this->db->prepare(
+            'INSERT INTO catalog_category_media
+                (category_id, storage_driver, storage_key, public_url, width, height, bytes, mime)
+             VALUES
+                (:category_id, :storage_driver, :storage_key, :public_url, :width, :height, :bytes, :mime)
+             ON DUPLICATE KEY UPDATE
+                storage_driver = VALUES(storage_driver), storage_key = VALUES(storage_key),
+                public_url = VALUES(public_url), width = VALUES(width), height = VALUES(height),
+                bytes = VALUES(bytes), mime = VALUES(mime), updated_at = CURRENT_TIMESTAMP'
+        );
+        $statement->execute([
+            'category_id' => $categoryId,
+            'storage_driver' => (string) $media['driver'],
+            'storage_key' => (string) $media['key'],
+            'public_url' => (string) $media['url'],
+            'width' => (int) $media['width'],
+            'height' => (int) $media['height'],
+            'bytes' => (int) $media['bytes'],
+            'mime' => (string) $media['mime'],
+        ]);
+    }
+
+    public function deleteCategoryMedia(int $categoryId): void
+    {
+        $this->ensureCategoryMediaTable();
+        $statement = $this->db->prepare('DELETE FROM catalog_category_media WHERE category_id = :category_id');
+        $statement->execute(['category_id' => $categoryId]);
+    }
+
+    private function ensureCategoryMediaTable(): void
+    {
+        if ($this->categoryMediaReady) {
+            return;
+        }
+        $this->db->exec(
+            "CREATE TABLE IF NOT EXISTS catalog_category_media (
+                category_id BIGINT UNSIGNED NOT NULL,
+                storage_driver VARCHAR(32) NOT NULL,
+                storage_key VARCHAR(500) NOT NULL,
+                public_url VARCHAR(1000) NOT NULL,
+                width INT UNSIGNED NOT NULL,
+                height INT UNSIGNED NOT NULL,
+                bytes INT UNSIGNED NOT NULL,
+                mime VARCHAR(100) NOT NULL DEFAULT 'image/webp',
+                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (category_id),
+                CONSTRAINT catalog_category_media_category_fk FOREIGN KEY (category_id)
+                    REFERENCES catalog_categories(id) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+        );
+        $this->categoryMediaReady = true;
     }
 
     /** @return list<array<string, mixed>> */

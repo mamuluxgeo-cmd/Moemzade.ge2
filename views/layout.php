@@ -27,7 +27,7 @@ $ogType = (string) ($ogType ?? 'website');
     <meta name="theme-color" content="#0f6e56">
     <link rel="icon" type="image/svg+xml" href="<?= asset('assets/images/favicon.svg') ?>">
     <link rel="preload" href="<?= asset('assets/fonts/bpg-mrgvlovani-caps-2010.ttf') ?>" as="font" type="font/ttf" crossorigin>
-    <link rel="stylesheet" href="<?= asset('assets/css/app.css?v=20260813-illustrated-categories-v2') ?>">
+    <link rel="stylesheet" href="<?= asset('assets/css/app.css?v=20260813-category-upload-v1') ?>">
     <?php if (!empty($structuredData)): ?><script type="application/ld+json"><?= str_replace('</', '<\/', (string) $structuredData) ?></script><?php endif; ?>
 </head>
 <body class="<?= is_admin() ? 'admin-session' : '' ?>">
