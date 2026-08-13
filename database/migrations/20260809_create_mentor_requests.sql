@@ -1,0 +1,31 @@
+SET NAMES utf8mb4;
+
+CREATE TABLE IF NOT EXISTS mentor_requests (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    slug VARCHAR(190) NOT NULL,
+    name VARCHAR(190) NOT NULL DEFAULT '',
+    learner_group VARCHAR(100) NOT NULL DEFAULT '',
+    category VARCHAR(120) NOT NULL DEFAULT '',
+    subject VARCHAR(190) NOT NULL DEFAULT '',
+    current_level VARCHAR(190) NOT NULL DEFAULT '',
+    learning_goal TEXT NULL,
+    region VARCHAR(120) NOT NULL DEFAULT '',
+    settlement VARCHAR(140) NOT NULL DEFAULT '',
+    format_online TINYINT(1) NOT NULL DEFAULT 0,
+    format_in_person TINYINT(1) NOT NULL DEFAULT 1,
+    availability VARCHAR(1000) NOT NULL DEFAULT '',
+    desired_start VARCHAR(190) NOT NULL DEFAULT '',
+    budget_from DECIMAL(10,2) NULL,
+    budget_unit VARCHAR(40) NOT NULL DEFAULT 'negotiable',
+    phone VARCHAR(50) NOT NULL DEFAULT '',
+    email VARCHAR(190) NOT NULL DEFAULT '',
+    details TEXT NULL,
+    status ENUM('draft', 'published', 'archived') NOT NULL DEFAULT 'draft',
+    published_at TIMESTAMP NULL DEFAULT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY mentor_requests_slug_unique (slug),
+    KEY mentor_requests_status_published_idx (status, published_at),
+    KEY mentor_requests_filter_idx (status, category, region)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -1,0 +1,5 @@
+<header class="page-hero seo-hero"><div class="container"><span class="section-kicker"><?= e(t('seo.curated')) ?></span><h1><?= e($landing['category']) ?> — <?= e($landing['location']) ?></h1><p><?= e(t('seo.subtitle', ['category' => $landing['category'], 'location' => $landing['location'], 'count' => count($landing['teachers'])])) ?></p></div></header>
+<section class="section listing-section"><div class="container">
+    <div class="seo-summary"><div><strong><?= count($landing['teachers']) ?></strong><span><?= e(t('search.results', ['count' => count($landing['teachers'])])) ?></span></div><a class="button button-muted" href="/teachers?category=<?= rawurlencode((string) $landing['category']) ?><?= !$landing['online'] ? '&settlement=' . rawurlencode((string) $landing['location']) : '&format=online' ?>"><?= e(t('seo.all_filters')) ?></a></div>
+    <div class="teacher-grid"><?php foreach ($landing['teachers'] as $teacher): require BASE_PATH . '/views/partials/teacher-card.php'; endforeach; ?></div>
+</div></section>
