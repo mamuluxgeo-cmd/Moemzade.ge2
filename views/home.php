@@ -9,7 +9,7 @@
             <form class="quick-search" action="/teachers" method="get">
                 <label>
                     <span><?= e(t('search.category')) ?></span>
-                    <select name="category"><option value=""><?= e(t('search.any')) ?></option><?php foreach ($options['categories'] as $category): ?><option value="<?= e($category) ?>"><?= e($category) ?></option><?php endforeach; ?></select>
+                    <select name="category"><?= category_option_tags($options, '', t('search.any')) ?></select>
                 </label>
                 <label>
                     <span><?= e(t('search.region')) ?></span>

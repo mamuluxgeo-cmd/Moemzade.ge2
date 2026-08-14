@@ -84,6 +84,219 @@
     renderSettlements();
   });
 
+  const categoryTree = document.querySelector('[data-category-tree]');
+  if (categoryTree) {
+    const rootContainer = categoryTree.querySelector('[data-category-container][data-parent-id=""]');
+    const rootDropzone = categoryTree.querySelector('[data-root-dropzone]');
+    const orderForm = document.querySelector('[data-category-order-form]');
+    const structureInput = orderForm && orderForm.querySelector('[data-category-structure]');
+    const saveButton = document.querySelector('[data-category-save]');
+    const orderStatus = document.querySelector('[data-category-order-status]');
+    let draggedItem = null;
+    let currentDrop = null;
+    let dirty = false;
+
+    const directItems = (container) => container
+      ? Array.from(container.children).filter((child) => child.matches('[data-category-item]'))
+      : [];
+    const childContainer = (item) => item && item.querySelector(':scope > [data-category-children]');
+    const hasChildren = (item) => directItems(childContainer(item)).length > 0;
+    const clearDropState = () => {
+      categoryTree.querySelectorAll('.drop-before, .drop-after, .drop-inside').forEach((item) => {
+        item.classList.remove('drop-before', 'drop-after', 'drop-inside');
+      });
+      if (rootDropzone) rootDropzone.classList.remove('is-active');
+      currentDrop = null;
+    };
+
+    const refreshItem = (item, parentId, sortOrder) => {
+      const nested = parentId !== null;
+      const children = directItems(childContainer(item));
+      item.classList.toggle('is-child', nested);
+      const collapse = item.querySelector(':scope > [data-category-row] [data-category-collapse]');
+      if (collapse) {
+        collapse.disabled = children.length === 0;
+        if (children.length === 0) {
+          item.classList.remove('is-collapsed');
+          collapse.setAttribute('aria-expanded', 'true');
+        }
+      }
+      const promote = item.querySelector(':scope > [data-category-row] [data-promote]');
+      const demote = item.querySelector(':scope > [data-category-row] [data-demote]');
+      if (promote) promote.hidden = !nested;
+      if (demote) {
+        demote.hidden = nested;
+        demote.disabled = children.length > 0;
+      }
+      const parentSelect = item.querySelector(':scope > [data-category-editor] [data-parent-select]');
+      if (parentSelect && Array.from(parentSelect.options).some((option) => option.value === String(parentId || ''))) {
+        parentSelect.value = parentId === null ? '' : String(parentId);
+      }
+      const sortInput = item.querySelector(':scope > [data-category-editor] [data-sort-order]');
+      if (sortInput) sortInput.value = String(sortOrder);
+      children.forEach((child, index) => refreshItem(child, Number(item.dataset.categoryId), (index + 1) * 10));
+    };
+
+    const serialize = () => {
+      const structure = [];
+      directItems(rootContainer).forEach((root, rootIndex) => {
+        const rootId = Number(root.dataset.categoryId);
+        structure.push({ id: rootId, parent_id: null, sort_order: (rootIndex + 1) * 10 });
+        directItems(childContainer(root)).forEach((child, childIndex) => {
+          structure.push({
+            id: Number(child.dataset.categoryId),
+            parent_id: rootId,
+            sort_order: (childIndex + 1) * 10,
+          });
+        });
+        refreshItem(root, null, (rootIndex + 1) * 10);
+      });
+      if (structureInput) structureInput.value = JSON.stringify(structure);
+      return structure;
+    };
+
+    const markDirty = () => {
+      dirty = true;
+      serialize();
+      if (saveButton) saveButton.disabled = false;
+      if (orderStatus) {
+        orderStatus.textContent = 'შესანახი ცვლილებებია';
+        orderStatus.classList.add('is-dirty');
+      }
+    };
+
+    const insertBeforeDropzone = (item, reference = null) => {
+      if (!rootContainer) return;
+      rootContainer.insertBefore(item, reference || rootDropzone || null);
+    };
+
+    categoryTree.addEventListener('click', (event) => {
+      const button = event.target.closest('button');
+      const item = event.target.closest('[data-category-item]');
+      if (!button || !item || !categoryTree.contains(item)) return;
+
+      if (button.matches('[data-category-collapse]')) {
+        const collapsed = item.classList.toggle('is-collapsed');
+        button.setAttribute('aria-expanded', String(!collapsed));
+        return;
+      }
+      if (button.matches('[data-category-edit]')) {
+        const editor = item.querySelector(':scope > [data-category-editor]');
+        if (!editor) return;
+        const willOpen = editor.hidden;
+        editor.hidden = !willOpen;
+        button.setAttribute('aria-expanded', String(willOpen));
+        return;
+      }
+
+      const container = item.parentElement;
+      const siblings = directItems(container);
+      const index = siblings.indexOf(item);
+      if (button.matches('[data-move-up]') && index > 0) {
+        container.insertBefore(item, siblings[index - 1]);
+        markDirty();
+      } else if (button.matches('[data-move-down]') && index >= 0 && index < siblings.length - 1) {
+        container.insertBefore(siblings[index + 1], item);
+        markDirty();
+      } else if (button.matches('[data-promote]') && container !== rootContainer) {
+        const parentItem = container.closest('[data-category-item]');
+        insertBeforeDropzone(item, parentItem ? parentItem.nextElementSibling : null);
+        markDirty();
+      } else if (button.matches('[data-demote]') && container === rootContainer) {
+        if (hasChildren(item)) {
+          window.alert('ქვესფეროებიანი სფეროს სხვა სფეროში ჩაშლა შეუძლებელია.');
+          return;
+        }
+        const previous = siblings[index - 1];
+        if (!previous) {
+          window.alert('ჩასაშლელად სფეროს წინ სხვა მთავარი სფერო უნდა იყოს.');
+          return;
+        }
+        childContainer(previous).appendChild(item);
+        previous.classList.remove('is-collapsed');
+        markDirty();
+      }
+    });
+
+    categoryTree.addEventListener('dragstart', (event) => {
+      const handle = event.target.closest('[data-drag-handle]');
+      if (!handle) return;
+      draggedItem = handle.closest('[data-category-item]');
+      if (!draggedItem) return;
+      draggedItem.classList.add('is-dragging');
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/plain', draggedItem.dataset.categoryId || '');
+    });
+
+    categoryTree.addEventListener('dragover', (event) => {
+      if (!draggedItem) return;
+      const row = event.target.closest('[data-category-row]');
+      const target = row && row.closest('[data-category-item]');
+      if (!target || target === draggedItem || draggedItem.contains(target)) return;
+
+      const targetContainer = target.parentElement;
+      const rect = row.getBoundingClientRect();
+      const ratio = rect.height > 0 ? (event.clientY - rect.top) / rect.height : 0;
+      let mode = ratio < 0.38 ? 'before' : 'after';
+      if (targetContainer === rootContainer && ratio >= 0.38 && ratio <= 0.68) mode = 'inside';
+      if ((mode === 'inside' || targetContainer !== rootContainer) && hasChildren(draggedItem)) return;
+
+      event.preventDefault();
+      event.dataTransfer.dropEffect = 'move';
+      clearDropState();
+      target.classList.add(`drop-${mode}`);
+      currentDrop = { target, mode };
+    });
+
+    categoryTree.addEventListener('drop', (event) => {
+      if (!draggedItem || !currentDrop) return;
+      event.preventDefault();
+      const { target, mode } = currentDrop;
+      if (mode === 'inside') {
+        childContainer(target).appendChild(draggedItem);
+        target.classList.remove('is-collapsed');
+      } else if (mode === 'before') {
+        target.parentElement.insertBefore(draggedItem, target);
+      } else {
+        target.parentElement.insertBefore(draggedItem, target.nextSibling);
+      }
+      clearDropState();
+      markDirty();
+    });
+
+    if (rootDropzone) {
+      rootDropzone.addEventListener('dragover', (event) => {
+        if (!draggedItem) return;
+        event.preventDefault();
+        clearDropState();
+        rootDropzone.classList.add('is-active');
+      });
+      rootDropzone.addEventListener('drop', (event) => {
+        if (!draggedItem) return;
+        event.preventDefault();
+        insertBeforeDropzone(draggedItem);
+        clearDropState();
+        markDirty();
+      });
+    }
+
+    categoryTree.addEventListener('dragend', () => {
+      if (draggedItem) draggedItem.classList.remove('is-dragging');
+      draggedItem = null;
+      clearDropState();
+    });
+    if (orderForm) orderForm.addEventListener('submit', () => {
+      serialize();
+      dirty = false;
+    });
+    window.addEventListener('beforeunload', (event) => {
+      if (!dirty) return;
+      event.preventDefault();
+      event.returnValue = '';
+    });
+    serialize();
+  }
+
   const registerForm = document.querySelector('[data-registration-form]');
   if (registerForm) {
     const panels = Array.from(registerForm.querySelectorAll('[data-step-panel]'));

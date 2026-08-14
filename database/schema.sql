@@ -133,13 +133,18 @@ CREATE TABLE IF NOT EXISTS catalog_categories (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     name VARCHAR(120) NOT NULL,
     config_key VARCHAR(120) NULL DEFAULT NULL,
+    parent_id BIGINT UNSIGNED NULL DEFAULT NULL,
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
     sort_order INT UNSIGNED NOT NULL DEFAULT 100,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
     UNIQUE KEY catalog_categories_name_unique (name),
     UNIQUE KEY catalog_categories_config_key_unique (config_key),
-    KEY catalog_categories_sort_idx (sort_order, name)
+    KEY catalog_categories_parent_idx (parent_id),
+    KEY catalog_categories_tree_idx (is_active, parent_id, sort_order, name),
+    CONSTRAINT catalog_categories_parent_fk FOREIGN KEY (parent_id)
+        REFERENCES catalog_categories(id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS catalog_category_media (

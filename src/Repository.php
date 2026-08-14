@@ -9,9 +9,10 @@ use RuntimeException;
 
 final class Repository
 {
-    /** @var array{categories:list<string>,regions:list<string>,settlements:list<string>,region_settlements:array<string,list<string>>,languages:list<string>,subcategories:list<string>,category_subcategories:array<string,list<string>>}|null */
+    /** @var array{categories:list<string>,category_tree:list<array{id:int,name:string,children:list<array{id:int,name:string}>}>,regions:list<string>,settlements:list<string>,region_settlements:array<string,list<string>>,languages:list<string>,subcategories:list<string>,category_subcategories:array<string,list<string>>}|null */
     private ?array $filterOptionsCache = null;
     private bool $categoryMediaReady = false;
+    private bool $categoryHierarchyReady = false;
 
     /** @param array<string, mixed> $taxonomy */
     public function __construct(private readonly PDO $db, private readonly array $taxonomy = [])
@@ -67,6 +68,7 @@ final class Repository
     /** @return list<array{category:string,total:int,image_url:string}> */
     public function categorySummaries(int $limit = 30): array
     {
+        $this->ensureCategoryHierarchySchema();
         $this->ensureCategoryMediaTable();
         $limit = max(1, min(30, $limit));
         $rows = $this->db->query(
@@ -85,7 +87,8 @@ final class Repository
         $imageRows = $this->db->query(
             'SELECT c.name, m.public_url
              FROM catalog_categories c
-             LEFT JOIN catalog_category_media m ON m.category_id = c.id'
+             LEFT JOIN catalog_category_media m ON m.category_id = c.id
+             WHERE c.is_active = 1'
         )->fetchAll();
         $images = [];
         foreach ($imageRows as $row) {
@@ -104,17 +107,29 @@ final class Repository
         return array_slice($summaries, 0, $limit);
     }
 
-    /** @return array{categories:list<string>,regions:list<string>,settlements:list<string>,region_settlements:array<string,list<string>>,languages:list<string>,subcategories:list<string>,category_subcategories:array<string,list<string>>} */
+    /** @return array{categories:list<string>,category_tree:list<array{id:int,name:string,children:list<array{id:int,name:string}>}>,regions:list<string>,settlements:list<string>,region_settlements:array<string,list<string>>,languages:list<string>,subcategories:list<string>,category_subcategories:array<string,list<string>>} */
     public function filterOptions(): array
     {
         if ($this->filterOptionsCache !== null) {
             return $this->filterOptionsCache;
         }
 
+        $this->ensureCategoryHierarchySchema();
+
         $categoryRows = $this->db->query(
-            'SELECT name, config_key FROM catalog_categories ORDER BY sort_order, name'
+            'SELECT id, name, config_key, parent_id, sort_order
+             FROM catalog_categories
+             WHERE is_active = 1
+             ORDER BY parent_id IS NOT NULL, sort_order, name'
         )->fetchAll();
-        $categories = array_map(static fn (array $row): string => (string) $row['name'], $categoryRows);
+        $categoryTree = self::categoryTree($categoryRows);
+        $categories = [];
+        foreach ($categoryTree as $root) {
+            $categories[] = (string) $root['name'];
+            foreach ($root['children'] as $child) {
+                $categories[] = (string) $child['name'];
+            }
+        }
 
         $regionRows = $this->db->query(
             'SELECT id, name FROM catalog_regions ORDER BY sort_order, name'
@@ -206,6 +221,7 @@ final class Repository
 
         $this->filterOptionsCache = [
             'categories' => self::mergeOptions($categories, array_keys($categorySubcategories)),
+            'category_tree' => $categoryTree,
             'regions' => array_values($regions),
             'settlements' => $settlements,
             'region_settlements' => $regionSettlements,
@@ -236,8 +252,58 @@ final class Repository
         return $result;
     }
 
+    /**
+     * @param list<array<string, mixed>> $rows
+     * @return list<array{id:int,name:string,children:list<array{id:int,name:string}>}>
+     */
+    private static function categoryTree(array $rows): array
+    {
+        $roots = [];
+        $children = [];
+        foreach ($rows as $row) {
+            $item = [
+                'id' => (int) $row['id'],
+                'name' => (string) $row['name'],
+            ];
+            $parentId = isset($row['parent_id']) ? (int) $row['parent_id'] : 0;
+            if ($parentId > 0) {
+                $children[$parentId][] = $item;
+            } else {
+                $roots[] = $item;
+            }
+        }
+
+        $tree = [];
+        $rootIds = [];
+        foreach ($roots as $root) {
+            $rootIds[$root['id']] = true;
+            $tree[] = [
+                'id' => $root['id'],
+                'name' => $root['name'],
+                'children' => $children[$root['id']] ?? [],
+            ];
+        }
+
+        // An orphaned child should remain selectable instead of silently disappearing.
+        foreach ($children as $parentId => $items) {
+            if (isset($rootIds[$parentId])) {
+                continue;
+            }
+            foreach ($items as $item) {
+                $tree[] = [
+                    'id' => $item['id'],
+                    'name' => $item['name'],
+                    'children' => [],
+                ];
+            }
+        }
+
+        return $tree;
+    }
+
     public function seedTaxonomyCatalog(): void
     {
+        $this->ensureCategoryHierarchySchema();
         $this->db->beginTransaction();
         try {
             $insertCategory = $this->db->prepare(
@@ -384,17 +450,22 @@ final class Repository
     /** @return list<array<string, mixed>> */
     public function adminCatalogCategories(): array
     {
+        $this->ensureCategoryHierarchySchema();
         $this->ensureCategoryMediaTable();
         return $this->db->query(
             'SELECT c.*,
+                    p.name AS parent_name,
                     cm.public_url AS image_url,
                     cm.storage_key AS image_storage_key,
                     cm.storage_driver AS image_storage_driver,
                     (SELECT COUNT(*) FROM teachers t WHERE t.category = c.name) AS teacher_count,
-                    (SELECT COUNT(*) FROM mentor_requests mr WHERE mr.category = c.name) AS request_count
+                    (SELECT COUNT(*) FROM mentor_requests mr WHERE mr.category = c.name) AS request_count,
+                    (SELECT COUNT(*) FROM catalog_categories ch WHERE ch.parent_id = c.id AND ch.is_active = 1) AS child_count
              FROM catalog_categories c
+             LEFT JOIN catalog_categories p ON p.id = c.parent_id
              LEFT JOIN catalog_category_media cm ON cm.category_id = c.id
-             ORDER BY c.sort_order, c.name'
+             WHERE c.is_active = 1
+             ORDER BY c.parent_id IS NOT NULL, c.sort_order, c.name'
         )->fetchAll();
     }
 
@@ -511,30 +582,71 @@ final class Repository
         )->fetchAll();
     }
 
-    public function createCatalogCategory(string $name, int $sortOrder): int
+    public function createCatalogCategory(string $name, int $sortOrder, ?int $parentId = null): int
     {
+        $this->ensureCategoryHierarchySchema();
         $name = self::catalogName($name, 120);
-        $this->assertCatalogNameAvailable('catalog_categories', $name);
-        $statement = $this->db->prepare(
-            'INSERT INTO catalog_categories (name, config_key, sort_order) VALUES (:name, NULL, :sort_order)'
+        $parentId = $this->categoryParentId($parentId);
+        $existingStatement = $this->db->prepare(
+            'SELECT id, is_active FROM catalog_categories WHERE name = :name LIMIT 1'
         );
-        $statement->execute(['name' => $name, 'sort_order' => self::catalogSortOrder($sortOrder)]);
+        $existingStatement->execute(['name' => $name]);
+        $existing = $existingStatement->fetch();
+        if (is_array($existing)) {
+            if ((int) $existing['is_active'] === 1) {
+                throw new RuntimeException('ასეთი მნიშვნელობა უკვე არსებობს.');
+            }
+            $statement = $this->db->prepare(
+                'UPDATE catalog_categories
+                 SET parent_id = :parent_id, is_active = 1, sort_order = :sort_order
+                 WHERE id = :id'
+            );
+            $statement->execute([
+                'parent_id' => $parentId,
+                'sort_order' => self::catalogSortOrder($sortOrder),
+                'id' => (int) $existing['id'],
+            ]);
+            $this->filterOptionsCache = null;
+            return (int) $existing['id'];
+        }
+
+        $statement = $this->db->prepare(
+            'INSERT INTO catalog_categories (name, config_key, parent_id, is_active, sort_order)
+             VALUES (:name, NULL, :parent_id, 1, :sort_order)'
+        );
+        $statement->execute([
+            'name' => $name,
+            'parent_id' => $parentId,
+            'sort_order' => self::catalogSortOrder($sortOrder),
+        ]);
         $this->filterOptionsCache = null;
         return (int) $this->db->lastInsertId();
     }
 
-    public function updateCatalogCategory(int $id, string $name, int $sortOrder): void
+    public function updateCatalogCategory(int $id, string $name, int $sortOrder, ?int $parentId = null): void
     {
+        $this->ensureCategoryHierarchySchema();
         $name = self::catalogName($name, 120);
         $current = $this->catalogRow('catalog_categories', $id);
+        if ((int) ($current['is_active'] ?? 1) !== 1) {
+            throw new RuntimeException('სფერო ვერ მოიძებნა.');
+        }
+        $parentId = $this->categoryParentId($parentId, $id);
         $this->assertCatalogNameAvailable('catalog_categories', $name, $id);
 
         $this->db->beginTransaction();
         try {
             $statement = $this->db->prepare(
-                'UPDATE catalog_categories SET name = :name, sort_order = :sort_order WHERE id = :id'
+                'UPDATE catalog_categories
+                 SET name = :name, parent_id = :parent_id, sort_order = :sort_order
+                 WHERE id = :id'
             );
-            $statement->execute(['name' => $name, 'sort_order' => self::catalogSortOrder($sortOrder), 'id' => $id]);
+            $statement->execute([
+                'name' => $name,
+                'parent_id' => $parentId,
+                'sort_order' => self::catalogSortOrder($sortOrder),
+                'id' => $id,
+            ]);
             $this->replaceTextValue('teachers', 'category', (string) $current['name'], $name);
             $this->replaceTextValue('mentor_requests', 'category', (string) $current['name'], $name);
             $this->replaceTextValue('search_events', 'category', (string) $current['name'], $name);
@@ -549,7 +661,11 @@ final class Repository
 
     public function deleteCatalogCategory(int $id): void
     {
+        $this->ensureCategoryHierarchySchema();
         $category = $this->catalogRow('catalog_categories', $id);
+        if ((int) ($category['is_active'] ?? 1) !== 1) {
+            throw new RuntimeException('სფერო ვერ მოიძებნა.');
+        }
         $name = (string) $category['name'];
         $teacherStatement = $this->db->prepare('SELECT COUNT(*) FROM teachers WHERE category = :name');
         $teacherStatement->execute(['name' => $name]);
@@ -557,16 +673,219 @@ final class Repository
         $requestStatement = $this->db->prepare('SELECT COUNT(*) FROM mentor_requests WHERE category = :name');
         $requestStatement->execute(['name' => $name]);
         $requestCount = (int) $requestStatement->fetchColumn();
+        $childStatement = $this->db->prepare(
+            'SELECT COUNT(*) FROM catalog_categories WHERE parent_id = :id AND is_active = 1'
+        );
+        $childStatement->execute(['id' => $id]);
+        $childCount = (int) $childStatement->fetchColumn();
 
-        if ($teacherCount > 0 || $requestCount > 0) {
+        if ($teacherCount > 0 || $requestCount > 0 || $childCount > 0) {
             throw new \RuntimeException(
-                "სფერო ვერ წაიშლება: მას იყენებს {$teacherCount} მასწავლებელი და {$requestCount} განცხადება. ჯერ გადაიტანეთ ისინი სხვა სფეროში."
+                "სფერო ვერ წაიშლება: მას იყენებს {$teacherCount} მასწავლებელი, {$requestCount} განცხადება და {$childCount} ქვესფერო. ჯერ გადაიტანეთ ისინი სხვა სფეროში."
             );
         }
 
-        $statement = $this->db->prepare('DELETE FROM catalog_categories WHERE id = :id');
-        $statement->execute(['id' => $id]);
+        if ($category['config_key'] !== null && trim((string) $category['config_key']) !== '') {
+            $this->deleteCategoryMedia($id);
+            $statement = $this->db->prepare(
+                'UPDATE catalog_categories SET parent_id = NULL, is_active = 0 WHERE id = :id'
+            );
+            $statement->execute(['id' => $id]);
+        } else {
+            $statement = $this->db->prepare('DELETE FROM catalog_categories WHERE id = :id');
+            $statement->execute(['id' => $id]);
+        }
         $this->filterOptionsCache = null;
+    }
+
+    /** @param list<array<string, mixed>> $items */
+    public function reorderCatalogCategories(array $items): void
+    {
+        $this->ensureCategoryHierarchySchema();
+        if ($items === [] || count($items) > 500) {
+            throw new RuntimeException('სფეროების განლაგება არასწორია.');
+        }
+
+        $rows = $this->db->query(
+            'SELECT id FROM catalog_categories WHERE is_active = 1 ORDER BY id'
+        )->fetchAll(PDO::FETCH_COLUMN);
+        $expectedIds = array_map('intval', $rows);
+        sort($expectedIds, SORT_NUMERIC);
+
+        $structure = [];
+        foreach ($items as $position => $item) {
+            if (!is_array($item)) {
+                throw new RuntimeException('სფეროების განლაგება არასწორია.');
+            }
+            $id = (int) ($item['id'] ?? 0);
+            $parentId = isset($item['parent_id']) && (int) $item['parent_id'] > 0
+                ? (int) $item['parent_id'] : null;
+            if ($id <= 0 || isset($structure[$id])) {
+                throw new RuntimeException('სფეროების სიაში განმეორებული ან უცნობი ჩანაწერია.');
+            }
+            $structure[$id] = [
+                'parent_id' => $parentId,
+                'sort_order' => self::catalogSortOrder((int) ($item['sort_order'] ?? (($position + 1) * 10))),
+            ];
+        }
+
+        $submittedIds = array_keys($structure);
+        sort($submittedIds, SORT_NUMERIC);
+        if ($submittedIds !== $expectedIds) {
+            throw new RuntimeException('სიის შენახვამდე გვერდი განაახლეთ — სფეროების შემადგენლობა შეიცვალა.');
+        }
+
+        $childCounts = [];
+        foreach ($structure as $id => $item) {
+            $parentId = $item['parent_id'];
+            if ($parentId === null) {
+                continue;
+            }
+            if ($parentId === $id || !isset($structure[$parentId])) {
+                throw new RuntimeException('ქვესფეროს მშობელი სფერო არასწორია.');
+            }
+            $childCounts[$parentId] = ($childCounts[$parentId] ?? 0) + 1;
+        }
+        foreach ($structure as $id => $item) {
+            $parentId = $item['parent_id'];
+            if ($parentId !== null && $structure[$parentId]['parent_id'] !== null) {
+                throw new RuntimeException('დაშვებულია მხოლოდ ორი დონე: სფერო და ქვესფერო.');
+            }
+            if ($parentId !== null && ($childCounts[$id] ?? 0) > 0) {
+                throw new RuntimeException('ქვესფეროს საკუთარი ქვესფერო ვერ ექნება.');
+            }
+        }
+
+        $this->db->beginTransaction();
+        try {
+            $statement = $this->db->prepare(
+                'UPDATE catalog_categories SET parent_id = :parent_id, sort_order = :sort_order WHERE id = :id'
+            );
+            foreach ($structure as $id => $item) {
+                $statement->execute([
+                    'parent_id' => $item['parent_id'],
+                    'sort_order' => $item['sort_order'],
+                    'id' => $id,
+                ]);
+            }
+            $this->db->commit();
+            $this->filterOptionsCache = null;
+        } catch (\Throwable $exception) {
+            $this->db->rollBack();
+            throw $exception;
+        }
+    }
+
+    private function categoryParentId(?int $parentId, ?int $categoryId = null): ?int
+    {
+        if ($parentId === null || $parentId <= 0) {
+            return null;
+        }
+        if ($categoryId !== null && $parentId === $categoryId) {
+            throw new RuntimeException('სფერო საკუთარ თავში ვერ ჩაიშლება.');
+        }
+
+        $parent = $this->catalogRow('catalog_categories', $parentId);
+        if ((int) ($parent['is_active'] ?? 1) !== 1) {
+            throw new RuntimeException('მშობელი სფერო ვერ მოიძებნა.');
+        }
+        if (isset($parent['parent_id']) && (int) $parent['parent_id'] > 0) {
+            throw new RuntimeException('დაშვებულია მხოლოდ ორი დონე: სფერო და ქვესფერო.');
+        }
+
+        if ($categoryId !== null) {
+            $statement = $this->db->prepare(
+                'SELECT COUNT(*) FROM catalog_categories WHERE parent_id = :id AND is_active = 1'
+            );
+            $statement->execute(['id' => $categoryId]);
+            if ((int) $statement->fetchColumn() > 0) {
+                throw new RuntimeException('ჯერ არსებული ქვესფეროები გადაიტანეთ და შემდეგ ჩაშალეთ ეს სფერო.');
+            }
+        }
+
+        return $parentId;
+    }
+
+    private function ensureCategoryHierarchySchema(): void
+    {
+        if ($this->categoryHierarchyReady) {
+            return;
+        }
+
+        if ($this->db->getAttribute(PDO::ATTR_DRIVER_NAME) === 'sqlite') {
+            $columns = $this->db->query('PRAGMA table_info(catalog_categories)')->fetchAll();
+            $columnNames = array_fill_keys(array_map(
+                static fn (array $column): string => (string) $column['name'],
+                $columns
+            ), true);
+            if (!isset($columnNames['parent_id'])) {
+                $this->db->exec('ALTER TABLE catalog_categories ADD COLUMN parent_id INTEGER NULL');
+            }
+            if (!isset($columnNames['is_active'])) {
+                $this->db->exec('ALTER TABLE catalog_categories ADD COLUMN is_active INTEGER NOT NULL DEFAULT 1');
+            }
+            $this->db->exec(
+                'CREATE INDEX IF NOT EXISTS catalog_categories_tree_idx
+                 ON catalog_categories (is_active, parent_id, sort_order, name)'
+            );
+            $this->categoryHierarchyReady = true;
+            return;
+        }
+
+        $databaseName = (string) $this->db->query('SELECT DATABASE()')->fetchColumn();
+        if ($databaseName === '') {
+            throw new RuntimeException('მონაცემთა ბაზის სქემა ვერ განისაზღვრა.');
+        }
+        $columnExists = $this->db->prepare(
+            'SELECT COUNT(*) FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = :schema_name AND TABLE_NAME = :table_name AND COLUMN_NAME = :column_name'
+        );
+        $hasColumn = function (string $column) use ($columnExists, $databaseName): bool {
+            $columnExists->execute([
+                'schema_name' => $databaseName,
+                'table_name' => 'catalog_categories',
+                'column_name' => $column,
+            ]);
+            return (int) $columnExists->fetchColumn() > 0;
+        };
+        if (!$hasColumn('parent_id')) {
+            $this->db->exec(
+                'ALTER TABLE catalog_categories
+                 ADD COLUMN parent_id BIGINT UNSIGNED NULL DEFAULT NULL AFTER config_key'
+            );
+        }
+        if (!$hasColumn('is_active')) {
+            $this->db->exec(
+                'ALTER TABLE catalog_categories
+                 ADD COLUMN is_active TINYINT(1) NOT NULL DEFAULT 1 AFTER parent_id'
+            );
+        }
+
+        $indexExists = $this->db->prepare(
+            'SELECT COUNT(*) FROM information_schema.STATISTICS
+             WHERE TABLE_SCHEMA = :schema_name AND TABLE_NAME = :table_name AND INDEX_NAME = :index_name'
+        );
+        $hasIndex = function (string $index) use ($indexExists, $databaseName): bool {
+            $indexExists->execute([
+                'schema_name' => $databaseName,
+                'table_name' => 'catalog_categories',
+                'index_name' => $index,
+            ]);
+            return (int) $indexExists->fetchColumn() > 0;
+        };
+        if (!$hasIndex('catalog_categories_parent_idx')) {
+            $this->db->exec(
+                'ALTER TABLE catalog_categories ADD INDEX catalog_categories_parent_idx (parent_id)'
+            );
+        }
+        if (!$hasIndex('catalog_categories_tree_idx')) {
+            $this->db->exec(
+                'ALTER TABLE catalog_categories
+                 ADD INDEX catalog_categories_tree_idx (is_active, parent_id, sort_order, name)'
+            );
+        }
+
+        $this->categoryHierarchyReady = true;
     }
 
     public function createCatalogRegion(string $name, int $sortOrder): int
@@ -1451,6 +1770,9 @@ final class Repository
     {
         $statement = $this->db->prepare('DELETE FROM teachers WHERE id = :id');
         $statement->execute(['id' => $teacherId]);
+        if ($statement->rowCount() !== 1) {
+            throw new RuntimeException('პროფილი ვერ მოიძებნა.');
+        }
     }
 
     private function uniqueSlug(string $base, ?int $ignoreId): string
