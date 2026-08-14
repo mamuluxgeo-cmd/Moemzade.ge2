@@ -109,12 +109,52 @@ $expect(in_array('ინგლისური', $options['category_subcategories
 
 $newCategoryId = $repository->createCatalogCategory('ბიზნესი და ფინანსები', 5);
 $expect($repository->filterOptions()['categories'][0] === 'ბიზნესი და ფინანსები', 'ახალი სფეროს რიგითობა საჯარო სიაში არ აისახა.');
+$childCategoryId = $repository->createCatalogCategory('ბიზნესის დაგეგმვა', 10, $newCategoryId);
+$categoryTree = $repository->filterOptions()['category_tree'];
+$expect(
+    ($categoryTree[0]['children'][0]['name'] ?? '') === 'ბიზნესის დაგეგმვა',
+    'ქვესფერო მშობელი სფეროს ქვეშ არ გამოჩნდა.'
+);
+
+$thirdLevelRejected = false;
+try {
+    $repository->createCatalogCategory('დაუშვებელი მესამე დონე', 10, $childCategoryId);
+} catch (Throwable) {
+    $thirdLevelRejected = true;
+}
+$expect($thirdLevelRejected, 'მესამე დონის სფერო არ დაიბლოკა.');
 
 $repository->updateCatalogCategory(1, 'ენები და თარგმნა', 10);
 foreach (['teachers', 'mentor_requests', 'search_events', 'match_requests'] as $table) {
     $value = (string) $db->query("SELECT category FROM {$table} LIMIT 1")->fetchColumn();
     $expect($value === 'ენები და თარგმნა', "სფეროს გადარქმევა {$table}-ში არ გავრცელდა.");
 }
+
+$repository->reorderCatalogCategories([
+    ['id' => 2, 'parent_id' => null, 'sort_order' => 10],
+    ['id' => 1, 'parent_id' => null, 'sort_order' => 20],
+    ['id' => $newCategoryId, 'parent_id' => null, 'sort_order' => 30],
+    ['id' => $childCategoryId, 'parent_id' => $newCategoryId, 'sort_order' => 10],
+]);
+$expect(
+    $repository->filterOptions()['categories'] === ['სასკოლო საგნები', 'ენები და თარგმნა', 'ბიზნესი და ფინანსები', 'ბიზნესის დაგეგმვა'],
+    'გადაადგილებული სფეროების რიგითობა საჯარო სიაში არ აისახა.'
+);
+
+$parentDeleteRejected = false;
+try {
+    $repository->deleteCatalogCategory($newCategoryId);
+} catch (Throwable) {
+    $parentDeleteRejected = true;
+}
+$expect($parentDeleteRejected, 'ქვესფეროებიანი სფეროს წაშლა არ დაიბლოკა.');
+
+$disposableCategoryId = $repository->createCatalogCategory('დროებითი სფერო', 999);
+$repository->deleteCatalogCategory($disposableCategoryId);
+$expect(
+    !in_array('დროებითი სფერო', $repository->filterOptions()['categories'], true),
+    'წაშლილი სფერო საჯარო სიიდან არ გაქრა.'
+);
 
 $newRegionId = $repository->createCatalogRegion('ახალი რეგიონი', 30);
 $newSettlementId = $repository->createCatalogSettlement($newRegionId, 'ახალი ქალაქი', 10);
@@ -166,10 +206,13 @@ $registerHtml = render_taxonomy_template('register', [
 
 $expect(str_contains($categoriesHtml, 'action="/admin/categories"'), 'სფეროს დამატების ადმინ-ფორმა არ გამოჩნდა.');
 $expect(str_contains($categoriesHtml, 'ბიზნესი და ფინანსები'), 'ახალი სფერო ადმინ-გვერდზე არ გამოჩნდა.');
+$expect(str_contains($categoriesHtml, 'data-category-tree'), 'სფეროების ხისებრი რედაქტორი არ გამოჩნდა.');
+$expect(str_contains($categoriesHtml, 'action="/admin/categories/reorder"'), 'სფეროების განლაგების შენახვა არ გამოჩნდა.');
 $expect(str_contains($regionsHtml, 'action="/admin/settlements"'), 'ქალაქის დამატების ადმინ-ფორმა არ გამოჩნდა.');
 $expect(str_contains($regionsHtml, 'ახალი რეგიონი'), 'ახალი რეგიონი ადმინ-გვერდზე არ გამოჩნდა.');
 $expect(str_contains($registerHtml, 'data-location-form'), 'რეგისტრაციის დამოკიდებული მდებარეობის მარკერი აკლია.');
 $expect(str_contains($registerHtml, 'data-region="აჭარა"'), 'რეგისტრაციაში რეგიონთან მიბმული ქალაქები არ გამოჩნდა.');
+$expect(str_contains($registerHtml, '↳ ბიზნესის დაგეგმვა'), 'რეგისტრაციაში ქვესფეროს იერარქია არ გამოჩნდა.');
 
 $configuredRegions = array_fill_keys($taxonomy['regions'], true);
 foreach ($taxonomy['region_settlements'] as $region => $items) {
@@ -178,6 +221,7 @@ foreach ($taxonomy['region_settlements'] as $region => $items) {
 }
 
 $expect($newCategoryId > 0, 'ახალი სფეროს ID არ დაბრუნდა.');
+$expect($childCategoryId > 0, 'ახალი ქვესფეროს ID არ დაბრუნდა.');
 
 if ($failures) {
     fwrite(STDERR, implode(PHP_EOL, $failures) . PHP_EOL);

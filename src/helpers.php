@@ -248,6 +248,67 @@ function query_url(string $path, array $changes = []): string
 }
 
 /** @param array<string, mixed> $options */
+function category_option_tags(
+    array $options,
+    string $selectedCategory = '',
+    string $emptyLabel = '—'
+): string {
+    $html = '<option value="">' . e($emptyLabel) . '</option>';
+    $selectedFound = $selectedCategory === '';
+    $rendered = [];
+    $tree = $options['category_tree'] ?? [];
+
+    if (is_array($tree) && $tree !== []) {
+        foreach ($tree as $root) {
+            if (!is_array($root)) {
+                continue;
+            }
+            $name = trim((string) ($root['name'] ?? ''));
+            if ($name === '' || isset($rendered[$name])) {
+                continue;
+            }
+            $selected = $selectedCategory === $name;
+            $selectedFound = $selectedFound || $selected;
+            $rendered[$name] = true;
+            $html .= '<option value="' . e($name) . '" data-category-depth="0"'
+                . ($selected ? ' selected' : '') . '>' . e($name) . '</option>';
+
+            foreach (($root['children'] ?? []) as $child) {
+                if (!is_array($child)) {
+                    continue;
+                }
+                $childName = trim((string) ($child['name'] ?? ''));
+                if ($childName === '' || isset($rendered[$childName])) {
+                    continue;
+                }
+                $childSelected = $selectedCategory === $childName;
+                $selectedFound = $selectedFound || $childSelected;
+                $rendered[$childName] = true;
+                $html .= '<option value="' . e($childName) . '" data-category-depth="1"'
+                    . ($childSelected ? ' selected' : '') . '>↳ ' . e($childName) . '</option>';
+            }
+        }
+    } else {
+        foreach (($options['categories'] ?? []) as $category) {
+            $name = trim((string) $category);
+            if ($name === '' || isset($rendered[$name])) {
+                continue;
+            }
+            $selected = $selectedCategory === $name;
+            $selectedFound = $selectedFound || $selected;
+            $rendered[$name] = true;
+            $html .= '<option value="' . e($name) . '"' . ($selected ? ' selected' : '') . '>'
+                . e($name) . '</option>';
+        }
+    }
+
+    if (!$selectedFound && $selectedCategory !== '') {
+        $html .= '<option value="' . e($selectedCategory) . '" selected>' . e($selectedCategory) . '</option>';
+    }
+    return $html;
+}
+
+/** @param array<string, mixed> $options */
 function settlement_option_tags(
     array $options,
     string $selectedRegion = '',
@@ -438,7 +499,7 @@ function teacher_status_label(string $status): string
 {
     return match ($status) {
         'published' => t('status.published'),
-        'archived' => t('status.rejected'),
+        'archived' => t('status.archived'),
         default => t('status.pending'),
     };
 }

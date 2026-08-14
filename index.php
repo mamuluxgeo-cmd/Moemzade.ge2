@@ -434,9 +434,30 @@ try {
         try {
             $repository->createCatalogCategory(
                 (string) ($_POST['name'] ?? ''),
-                (int) ($_POST['sort_order'] ?? 100)
+                (int) ($_POST['sort_order'] ?? 100),
+                isset($_POST['parent_id']) && (int) $_POST['parent_id'] > 0 ? (int) $_POST['parent_id'] : null
             );
             flash('success', 'სფერო დაემატა და ყველა შესაბამის სიაში გამოჩნდება.');
+        } catch (\Throwable $exception) {
+            flash('error', $exception->getMessage());
+        }
+        redirect('/admin/categories');
+    }
+
+    if ($path === '/admin/categories/reorder' && $method === 'POST') {
+        require_admin();
+        verify_csrf();
+        try {
+            $payload = (string) ($_POST['structure'] ?? '');
+            if ($payload === '' || strlen($payload) > 100000) {
+                throw new RuntimeException('სფეროების განლაგება არასწორია.');
+            }
+            $structure = json_decode($payload, true, 512, JSON_THROW_ON_ERROR);
+            if (!is_array($structure)) {
+                throw new RuntimeException('სფეროების განლაგება არასწორია.');
+            }
+            $repository->reorderCatalogCategories($structure);
+            flash('success', 'სფეროების რიგითობა და ჩაშლა შენახულია.');
         } catch (\Throwable $exception) {
             flash('error', $exception->getMessage());
         }
@@ -450,7 +471,8 @@ try {
             $repository->updateCatalogCategory(
                 (int) $matches[1],
                 (string) ($_POST['name'] ?? ''),
-                (int) ($_POST['sort_order'] ?? 100)
+                (int) ($_POST['sort_order'] ?? 100),
+                isset($_POST['parent_id']) && (int) $_POST['parent_id'] > 0 ? (int) $_POST['parent_id'] : null
             );
             flash('success', 'სფერო და მასთან დაკავშირებული ჩანაწერები განახლდა.');
         } catch (\Throwable $exception) {
@@ -636,6 +658,36 @@ try {
             flash('success', t('admin.status_updated'));
         }
         redirect('/admin/teachers?status=' . rawurlencode($status === 'published' ? 'draft' : $status));
+    }
+
+    if ($method === 'POST' && preg_match('#^/admin/teachers/(\d+)/delete$#', $path, $matches)) {
+        require_admin();
+        verify_csrf();
+        $teacherId = (int) $matches[1];
+        try {
+            $teacher = $repository->findTeacherById($teacherId);
+            if ($teacher === null) {
+                throw new RuntimeException('პროფილი ვერ მოიძებნა.');
+            }
+            $teacherName = localized($teacher, 'name');
+            if ($teacherName === '' || !hash_equals($teacherName, trim((string) ($_POST['confirmation'] ?? '')))) {
+                throw new RuntimeException('სრული წაშლის დასადასტურებლად ზუსტად ჩაწერეთ პროფილის სახელი.');
+            }
+
+            $oldMedia = $repository->teacherMedia($teacherId);
+            $repository->deleteTeacher($teacherId);
+            if ($oldMedia !== []) {
+                try {
+                    (new MediaManager($config['media']))->deleteStored($oldMedia);
+                } catch (\Throwable $cleanupException) {
+                    error_log($cleanupException->__toString());
+                }
+            }
+            flash('success', 'პროფილი, განცხადება და დაკავშირებული მონაცემები სრულად წაიშალა.');
+        } catch (\Throwable $exception) {
+            flash('error', $exception->getMessage());
+        }
+        redirect('/admin/teachers');
     }
 
     if ($path === '/admin/teachers/new' && $method === 'GET') {
