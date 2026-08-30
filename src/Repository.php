@@ -54,6 +54,18 @@ final class Repository
     }
 
     /** @return list<array<string, mixed>> */
+    public function carouselTeachers(): array
+    {
+        return $this->db->query(
+            "SELECT t.*, m.public_url AS photo_url
+             FROM teachers t
+             LEFT JOIN teacher_media m ON m.teacher_id = t.id AND m.variant = 'profile'
+             WHERE t.status = 'published'
+             ORDER BY t.id"
+        )->fetchAll();
+    }
+
+    /** @return list<array<string, mixed>> */
     public function latestMentorRequests(int $limit = 6): array
     {
         $limit = max(1, min(24, $limit));
