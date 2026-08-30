@@ -689,9 +689,16 @@ body.modal-open { overflow: hidden; }
   .teachers-page-grid { grid-template-columns: 1fr; }
   .teachers-page-grid .teacher-card { height: auto; }
   .hero h1 { font-size: 27px; }
-  .hero-carousel { margin-inline: -6px; padding: 0 34px; }
-  .hero-teacher-card { min-width: 100%; grid-template-columns: 112px minmax(0, 1fr); }
-  .hero-teacher-photo { width: 112px; }
+  .hero-carousel { margin-inline: -6px; padding: 0 28px; }
+  .hero-carousel-track { gap: 6px; }
+  .hero-carousel-arrow { width: 28px; height: 28px; font-size: 21px; }
+  .hero-teacher-card { min-width: calc((100% - 12px) / 3); grid-template-columns: 1fr; align-content: start; padding: 5px; border-radius: 10px; }
+  .hero-teacher-card::before { left: 4px; width: 1px; }
+  .hero-teacher-photo { width: 100%; aspect-ratio: 4 / 3; border-width: 3px; border-radius: 7px; font-size: 22px; transform: none; }
+  .hero-teacher-copy { padding: 5px 1px 2px; }
+  .hero-teacher-copy small { font-size: 6px; }
+  .hero-teacher-copy strong { margin: 2px 0 3px; font-size: 9px; }
+  .hero-teacher-copy > span { font-size: 7px; }
   .hero-copy { font-size: 16px; }
   .hero-stats { gap: 8px; margin-top: 22px; }
   .hero-stats div { min-height: 78px; padding: 12px 6px 10px; border-radius: 13px; }
@@ -714,11 +721,42 @@ body.modal-open { overflow: hidden; }
   .admin-toolbar, .admin-title-row { align-items: stretch; flex-direction: column; }
   .admin-title-actions, .step-actions { align-items: stretch; flex-direction: column; }
   .admin-filter-form { grid-template-columns: 1fr; }
-  .category-card { width: 100%; }
+  .category-grid { gap: 6px; }
+  .category-card { width: calc((100% - 12px) / 3); min-height: 142px; padding: 6px; border-radius: 10px; }
+  .category-card:nth-child(n + 16) { display: none; }
+  .category-art { height: 64px; border-radius: 7px; }
+  .category-popular { top: 4px; right: 4px; padding: 3px 4px; font-size: 5px; }
+  .category-card strong { min-height: 26px; margin-top: 6px; font-size: 8px; line-height: 1.25; }
+  .category-card-footer { gap: 3px; padding-top: 5px; }
+  .category-card-footer small { padding: 3px 4px; font-size: 6px; }
+  .category-card-footer i { width: 18px; height: 18px; border-radius: 5px; font-size: 8px; }
   .category-heading { gap: 16px; }
   .category-all-link { width: 100%; justify-content: center; }
   .similar-grid { grid-template-columns: 1fr; }
-  .home-teacher-grid, .mentor-home-section .home-request-grid { grid-template-columns: 1fr; }
+  .home-teacher-grid, .mentor-home-section .home-request-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
+  .home-teacher-grid .teacher-card:nth-child(n + 16), .home-request-grid .request-card:nth-child(n + 16) { display: none; }
+  .home-teacher-grid .teacher-card > a { padding: 4px; }
+  .home-teacher-grid .teacher-card-clip { top: -5px; right: 7px; width: 7px; height: 18px; border-width: 1px; }
+  .home-teacher-grid .teacher-card-body { min-height: 96px; margin-top: 3px; padding: 17px 4px 5px; background-size: auto 20px, auto; }
+  .home-teacher-grid .teacher-category, .home-teacher-grid .teacher-card-price { top: -10px; min-height: 16px; padding: 2px 3px; font-size: 5px; }
+  .home-teacher-grid .teacher-card h3 { margin-right: 16px; font-size: 9px; }
+  .home-teacher-grid .teacher-card-body > p:not(.teacher-category) { min-height: 22px; margin: 2px 14px 5px 0; font-size: 7px; }
+  .home-teacher-grid .teacher-meta { gap: 2px; padding-right: 16px; font-size: 5px; }
+  .home-teacher-grid .teacher-meta span { padding: 2px 3px; }
+  .home-teacher-grid .teacher-card-arrow { right: 3px; bottom: 4px; width: 15px; height: 15px; font-size: 8px; }
+  .home-request-grid .request-card { border-radius: 10px; }
+  .home-request-grid .request-card-main { min-height: 190px; padding: 6px; }
+  .home-request-grid .request-card-top { gap: 3px; margin-bottom: 6px; }
+  .home-request-grid .request-icon { width: 25px; height: 25px; border-radius: 7px; font-size: 12px; }
+  .home-request-grid .request-budget { padding: 3px; font-size: 5px; }
+  .home-request-grid .teacher-category { margin-bottom: 4px; padding: 2px 3px; font-size: 5px; }
+  .home-request-grid .request-card h3 { font-size: 9px; }
+  .home-request-grid .request-person { margin: 3px 0 6px; font-size: 6px; }
+  .home-request-grid .request-meta { gap: 2px; }
+  .home-request-grid .request-meta span { padding: 2px 3px; font-size: 5px; }
+  .home-request-grid .request-availability { padding-top: 6px; font-size: 6px; -webkit-line-clamp: 2; }
+  .home-request-grid .request-card-actions { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px; padding: 4px; }
+  .home-request-grid .request-card-actions a { min-height: 23px; padding: 3px 1px; font-size: 5px; }
   .register-step { padding: 24px 18px; }
   .community-card, .success-card { padding: 26px 20px; }
   .seo-summary { align-items: stretch; flex-direction: column; }
