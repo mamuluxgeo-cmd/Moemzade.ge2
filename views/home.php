@@ -1,41 +1,43 @@
+<?php $carouselTeachers = isset($carouselTeachers) && is_array($carouselTeachers) ? $carouselTeachers : []; ?>
 <section class="hero">
     <div class="hero-glow glow-one"></div>
     <div class="hero-glow glow-two"></div>
-    <div class="container hero-grid">
-        <div>
-            <p class="eyebrow"><span></span><?= e(t('home.eyebrow')) ?></p>
-            <h1><?= e(t('home.title')) ?></h1>
-            <p class="hero-copy"><?= e(t('home.subtitle')) ?></p>
-            <form class="quick-search" action="/teachers" method="get">
-                <label>
-                    <span><?= e(t('search.category')) ?></span>
-                    <select name="category"><?= category_option_tags($options, '', t('search.any')) ?></select>
-                </label>
-                <label>
-                    <span><?= e(t('search.region')) ?></span>
-                    <select name="region"><option value=""><?= e(t('search.any')) ?></option><?php foreach ($options['regions'] as $region): ?><option value="<?= e($region) ?>"><?= e($region) ?></option><?php endforeach; ?></select>
-                </label>
-                <label>
-                    <span><?= e(t('search.format')) ?></span>
-                    <select name="format"><option value=""><?= e(t('search.any')) ?></option><option value="online"><?= e(t('search.online')) ?></option><option value="in_person"><?= e(t('search.in_person')) ?></option></select>
-                </label>
-                <button class="button button-primary" type="submit"><?= e(t('search.submit')) ?></button>
-            </form>
-            <div class="hero-stats">
-                <div><strong><?= (int) $stats['teachers'] ?></strong><span><?= e(t('nav.teachers')) ?></span></div>
-                <div><strong><?= (int) $stats['categories'] ?></strong><span><?= e(t('search.category')) ?></span></div>
-                <div><strong><?= (int) $stats['regions'] ?></strong><span><?= e(t('search.region')) ?></span></div>
+    <div class="container hero-content">
+        <h1><?= e(t('home.title')) ?></h1>
+
+        <?php if ($carouselTeachers): ?>
+            <div class="hero-carousel" data-teacher-carousel aria-label="<?= e(t('nav.teachers')) ?>">
+                <button class="hero-carousel-arrow hero-carousel-prev" type="button" data-carousel-prev aria-label="Previous">‹</button>
+                <div class="hero-carousel-viewport" data-carousel-viewport tabindex="0">
+                    <div class="hero-carousel-track">
+                        <?php foreach ($carouselTeachers as $carouselTeacher): ?>
+                            <a class="hero-teacher-card" href="/teacher/<?= rawurlencode((string) $carouselTeacher['slug']) ?>">
+                                <span class="hero-teacher-photo">
+                                    <?php if (!empty($carouselTeacher['photo_url'])): ?>
+                                        <img src="<?= e($carouselTeacher['photo_url']) ?>" alt="<?= e(localized($carouselTeacher, 'name')) ?>" loading="lazy" width="720" height="540">
+                                    <?php else: ?>
+                                        <span aria-hidden="true"><?= e(mb_substr(localized($carouselTeacher, 'name'), 0, 1, 'UTF-8')) ?></span>
+                                    <?php endif; ?>
+                                </span>
+                                <span class="hero-teacher-copy">
+                                    <small><?= e($carouselTeacher['category']) ?></small>
+                                    <strong><?= e(localized($carouselTeacher, 'name')) ?></strong>
+                                    <span>📍 <?= e($carouselTeacher['settlement'] ?: $carouselTeacher['region']) ?></span>
+                                </span>
+                            </a>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <button class="hero-carousel-arrow hero-carousel-next" type="button" data-carousel-next aria-label="Next">›</button>
             </div>
-        </div>
-        <aside class="hero-card">
-            <div class="hero-card-mark">✓</div>
-            <h2><?= e(t('site.tagline')) ?></h2>
-            <ol>
-                <li><span>01</span><?= e(t('search.category')) ?></li>
-                <li><span>02</span><?= e(t('search.region')) ?> / <?= e(t('search.format')) ?></li>
-                <li><span>03</span><?= e(t('teacher.call')) ?></li>
-            </ol>
-        </aside>
+        <?php endif; ?>
+
+        <form class="quick-search" action="/teachers" method="get">
+            <label><span><?= e(t('search.category')) ?></span><select name="category"><?= category_option_tags($options, '', t('search.any')) ?></select></label>
+            <label><span><?= e(t('search.region')) ?></span><select name="region"><option value=""><?= e(t('search.any')) ?></option><?php foreach ($options['regions'] as $region): ?><option value="<?= e($region) ?>"><?= e($region) ?></option><?php endforeach; ?></select></label>
+            <label><span><?= e(t('search.format')) ?></span><select name="format"><option value=""><?= e(t('search.any')) ?></option><option value="online"><?= e(t('search.online')) ?></option><option value="in_person"><?= e(t('search.in_person')) ?></option></select></label>
+            <button class="button button-primary" type="submit"><?= e(t('search.submit')) ?></button>
+        </form>
     </div>
 </section>
 
