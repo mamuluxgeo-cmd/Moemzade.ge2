@@ -93,7 +93,7 @@ $popularLeft = 3;
     <div class="container">
         <div class="section-heading mentor-section-heading"><div><span><?= e(t('nav.match')) ?></span><h2><?= e(t('mentor.home_title')) ?></h2><p><?= e(t('mentor.home_subtitle')) ?></p></div><div class="section-heading-actions"><a href="/mentor-requests"><?= e(t('common.all')) ?> →</a><a class="button button-primary" href="/mentor-requests/new">+ <?= e(t('mentor.add_request')) ?></a></div></div>
         <?php if ($mentorRequests): ?>
-            <div class="request-grid"><?php foreach ($mentorRequests as $request): require BASE_PATH . '/views/partials/mentor-request-card.php'; endforeach; ?></div>
+            <div class="request-grid home-request-grid"><?php foreach ($mentorRequests as $request): require BASE_PATH . '/views/partials/mentor-request-card.php'; endforeach; ?></div>
         <?php else: ?>
             <div class="empty-state"><h2><?= e(t('mentor.empty')) ?></h2><p><?= e(t('mentor.empty_text')) ?></p><a class="button button-primary" href="/mentor-requests/new"><?= e(t('mentor.add_request')) ?></a></div>
         <?php endif; ?>
