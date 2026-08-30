@@ -111,7 +111,7 @@ textarea { resize: vertical; }
 .section-heading h2 { margin: 5px 0 0; font-size: clamp(28px, 4vw, 42px); line-height: 1.2; }
 .section-heading a { color: var(--green-700); font-weight: 800; }
 .teacher-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; }
-.home-teacher-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+.home-teacher-grid { grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 10px; }
 .home-teacher-grid .teacher-card { border-radius: 16px; }
 .home-teacher-grid .teacher-photo { aspect-ratio: 4 / 3; }
 .home-teacher-grid .teacher-card-body { padding: 14px; }
@@ -415,7 +415,7 @@ body.modal-open { overflow: hidden; }
 
 .mentor-home-section { background: linear-gradient(180deg, #eef9f5, #faf9f2); border-top: 1px solid var(--line); }
 .mentor-section-heading p { max-width: 700px; margin: 8px 0 0; color: var(--muted); }
-.mentor-home-section .request-grid { grid-template-columns: repeat(auto-fit, minmax(280px, 371px)); justify-content: center; }
+.mentor-home-section .home-request-grid { grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 10px; justify-content: stretch; }
 .section-heading-actions { display: flex; align-items: center; gap: 14px; }
 .section-heading-actions .button { color: #fff; }
 .request-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; }
@@ -548,6 +548,34 @@ body.modal-open { overflow: hidden; }
 .home-teacher-grid .teacher-card h3, .teachers-page-grid .teacher-card h3 { margin-right: 28px; font-size: 17px; }
 .home-teacher-grid .teacher-meta, .teachers-page-grid .teacher-meta { gap: 5px; padding-right: 30px; font-size: 10px; }
 .home-teacher-grid .teacher-meta span, .teachers-page-grid .teacher-meta span { padding: 5px 7px; }
+.home-teacher-grid .teacher-card { border-radius: 12px; }
+.home-teacher-grid .teacher-card > a { padding: 5px; }
+.home-teacher-grid .teacher-card-clip { top: -6px; right: 10px; width: 9px; height: 23px; }
+.home-teacher-grid .teacher-photo { aspect-ratio: 16 / 10; border-radius: 9px 9px 6px 6px; }
+.home-teacher-grid .teacher-photo::after { border-width: 3px; }
+.home-teacher-grid .teacher-card-body { min-height: 104px; margin-top: 4px; padding: 19px 6px 6px; background-size: auto 22px, auto; }
+.home-teacher-grid .teacher-category, .home-teacher-grid .teacher-card-price { top: -12px; min-height: 19px; padding: 3px 5px; border-radius: 5px; font-size: 7px; }
+.home-teacher-grid .teacher-category { left: 4px; max-width: calc(68% - 4px); }
+.home-teacher-grid .teacher-card-price { right: 4px; }
+.home-teacher-grid .teacher-card h3 { margin-right: 20px; font-size: 11px; }
+.home-teacher-grid .teacher-card-body > p:not(.teacher-category) { min-height: 25px; margin: 3px 18px 6px 0; font-size: 8px; line-height: 1.35; }
+.home-teacher-grid .teacher-meta { gap: 3px; padding-right: 20px; font-size: 6px; }
+.home-teacher-grid .teacher-meta span { padding: 3px 4px; }
+.home-teacher-grid .teacher-card-arrow { right: 4px; bottom: 5px; width: 19px; height: 19px; font-size: 10px; }
+
+.home-request-grid .request-card { border-radius: 14px; }
+.home-request-grid .request-card-main { min-height: 238px; padding: 10px; }
+.home-request-grid .request-card-top { gap: 5px; margin-bottom: 9px; }
+.home-request-grid .request-icon { width: 32px; height: 32px; border-radius: 10px; font-size: 16px; }
+.home-request-grid .request-budget { padding: 4px 5px; border-radius: 6px; font-size: 7px; white-space: nowrap; }
+.home-request-grid .teacher-category { position: static; min-height: 0; align-self: flex-start; margin-bottom: 6px; padding: 3px 5px; font-size: 7px; }
+.home-request-grid .request-card h3 { font-size: 12px; line-height: 1.3; }
+.home-request-grid .request-person { margin: 5px 0 9px; font-size: 8px; }
+.home-request-grid .request-meta { gap: 3px; }
+.home-request-grid .request-meta span { padding: 3px 4px; font-size: 6px; }
+.home-request-grid .request-availability { padding-top: 10px; font-size: 8px; line-height: 1.4; }
+.home-request-grid .request-card-actions { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 3px; padding: 6px; }
+.home-request-grid .request-card-actions a { min-width: 0; min-height: 27px; padding: 4px 2px; overflow: hidden; border-radius: 6px; font-size: 6px; text-overflow: ellipsis; white-space: nowrap; }
 .teachers-page-grid .teacher-card, .teachers-page-grid .teacher-card:nth-child(even) { height: auto; min-height: 0; transform: none; }
 .teachers-page-grid .teacher-card:hover { transform: translateY(-4px); }
 .teachers-page-grid .teacher-card > a { height: 100%; padding: 10px; }
@@ -584,7 +612,7 @@ body.modal-open { overflow: hidden; }
   .quick-search label { border-right: 0; }
   .teacher-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .teachers-page-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .home-teacher-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .home-teacher-grid, .mentor-home-section .home-request-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .request-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .stat-grid { grid-template-columns: repeat(3, 1fr); }
   .category-card { width: calc((100% - 36px) / 4); }
@@ -620,7 +648,7 @@ body.modal-open { overflow: hidden; }
   .hero-stats { width: min(100%, 460px); gap: 10px; }
   .teacher-grid { grid-template-columns: 1fr; }
   .teachers-page-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .home-teacher-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .home-teacher-grid, .mentor-home-section .home-request-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
   .home-teacher-grid .teacher-card-body { padding: 12px; }
   .request-grid { grid-template-columns: 1fr; }
   .match-form { grid-template-columns: 1fr; }
@@ -690,7 +718,7 @@ body.modal-open { overflow: hidden; }
   .category-heading { gap: 16px; }
   .category-all-link { width: 100%; justify-content: center; }
   .similar-grid { grid-template-columns: 1fr; }
-  .home-teacher-grid { grid-template-columns: 1fr; }
+  .home-teacher-grid, .mentor-home-section .home-request-grid { grid-template-columns: 1fr; }
   .register-step { padding: 24px 18px; }
   .community-card, .success-card { padding: 26px 20px; }
   .seo-summary { align-items: stretch; flex-direction: column; }
