@@ -12,6 +12,34 @@
     window.setTimeout(() => element.classList.add('flash-hidden'), 6000);
   });
 
+  document.querySelectorAll('[data-teacher-carousel]').forEach((carousel) => {
+    const viewport = carousel.querySelector('[data-carousel-viewport]');
+    const previous = carousel.querySelector('[data-carousel-prev]');
+    const next = carousel.querySelector('[data-carousel-next]');
+    if (!viewport || !previous || !next) return;
+
+    const step = () => Math.max(240, viewport.clientWidth * .78);
+    const move = (direction) => viewport.scrollBy({ left: direction * step(), behavior: 'smooth' });
+    previous.addEventListener('click', () => move(-1));
+    next.addEventListener('click', () => move(1));
+
+    let timer;
+    const stop = () => window.clearInterval(timer);
+    const start = () => {
+      stop();
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      timer = window.setInterval(() => {
+        const atEnd = viewport.scrollLeft + viewport.clientWidth >= viewport.scrollWidth - 8;
+        viewport.scrollTo({ left: atEnd ? 0 : viewport.scrollLeft + step(), behavior: 'smooth' });
+      }, 4500);
+    };
+    carousel.addEventListener('mouseenter', stop);
+    carousel.addEventListener('mouseleave', start);
+    carousel.addEventListener('focusin', stop);
+    carousel.addEventListener('focusout', start);
+    start();
+  });
+
   document.querySelectorAll('[data-taxonomy-form]').forEach((form) => {
     const category = form.querySelector('[data-category-select]');
     const professionOptions = form.querySelector('[data-profession-options]');
