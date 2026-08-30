@@ -4,6 +4,8 @@ $canonicalUrl = $canonicalUrl ?? absolute_url($requestPath);
 $socialTitle = (string) ($pageTitle ?? 'Moemzade.ge');
 $socialDescription = (string) ($metaDescription ?? t('home.subtitle'));
 $ogType = (string) ($ogType ?? 'website');
+$usesDefaultOgImage = empty($ogImage);
+$ogImage = $ogImage ?? absolute_url('/assets/images/social-preview.png?v=20260830');
 ?>
 <!doctype html>
 <html lang="<?= e(locale()) ?>">
@@ -19,7 +21,7 @@ $ogType = (string) ($ogType ?? 'website');
     <meta property="og:url" content="<?= e($canonicalUrl) ?>">
     <meta property="og:title" content="<?= e($socialTitle) ?>">
     <meta property="og:description" content="<?= e($socialDescription) ?>">
-    <?php if (!empty($ogImage)): ?><meta property="og:image" content="<?= e($ogImage) ?>"><meta property="og:image:alt" content="<?= e($socialTitle) ?>"><?php endif; ?>
+    <?php if (!empty($ogImage)): ?><meta property="og:image" content="<?= e($ogImage) ?>"><meta property="og:image:secure_url" content="<?= e($ogImage) ?>"><?php if ($usesDefaultOgImage): ?><meta property="og:image:type" content="image/png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><?php endif; ?><meta property="og:image:alt" content="<?= e($socialTitle) ?>"><?php endif; ?>
     <meta name="twitter:card" content="<?= !empty($ogImage) ? 'summary_large_image' : 'summary' ?>">
     <meta name="twitter:title" content="<?= e($socialTitle) ?>">
     <meta name="twitter:description" content="<?= e($socialDescription) ?>">
