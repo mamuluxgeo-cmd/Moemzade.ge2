@@ -47,11 +47,14 @@ try {
     }
 
     if ($method === 'GET' && $path === '/') {
+        $carouselTeachers = $repository->carouselTeachers();
+        shuffle($carouselTeachers);
         view('home', [
             'pageTitle' => 'Moemzade.ge — ' . t('site.tagline'),
             'metaDescription' => t('home.subtitle'),
             'stats' => $repository->homeStats(),
             'teachers' => $repository->latestTeachers(6),
+            'carouselTeachers' => $carouselTeachers,
             'mentorRequests' => $repository->latestMentorRequests(),
             'categories' => $repository->categorySummaries(),
             'options' => $repository->filterOptions(),
