@@ -47,7 +47,11 @@ try {
     }
 
     if ($method === 'GET' && $path === '/') {
-        $carouselTeachers = $repository->carouselTeachers();
+        $carouselTeachers = [];
+        $carouselTeacherCount = $repository->countTeachers([]);
+        for ($offset = 0; $offset < $carouselTeacherCount; $offset += 100) {
+            $carouselTeachers = array_merge($carouselTeachers, $repository->searchTeachers([], 100, $offset));
+        }
         shuffle($carouselTeachers);
         view('home', [
             'pageTitle' => 'Moemzade.ge — ' . t('site.tagline'),
