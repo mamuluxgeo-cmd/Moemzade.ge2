@@ -93,6 +93,7 @@ return [
     'register.bio_hint' => 'მინიმუმ 30 სიმბოლო.', 'register.languages_placeholder' => 'მაგ: ქართული, ინგლისური',
     'register.photo' => 'პროფილის ფოტო', 'register.photo_choose' => 'ფოტოს არჩევა ან გადაღება',
     'register.photo_help' => 'JPEG, PNG ან WebP — მაქსიმუმ :size MB.', 'register.photo_preview' => 'არჩეული ფოტოს წინასწარი ნახვა',
+    'register.photo_crop_help' => 'გადაადგილეთ ფოტო ჩარჩოში და მოარგეთ ისე, როგორც ბარათზე გსურთ გამოჩნდეს. სრული ფოტო პროფილზე უცვლელად დარჩება.', 'register.photo_zoom' => 'მასშტაბი', 'register.photo_reset' => 'საწყისზე დაბრუნება',
     'register.step3_title' => 'საკონტაქტო ინფორმაცია', 'register.step3_text' => 'მოსწავლეები ამ ნომრით დაგიკავშირდებიან.',
     'register.review_title' => 'რა მოხდება შემდეგ?', 'register.review_text' => 'განაცხადი შევა მოდერაციის რიგში. დამტკიცებამდე პროფილი საჯაროდ არ გამოჩნდება.',
     'register.consent' => 'ვეთანხმები საიტის', 'register.submit' => 'პროფილის გაგზავნა',
