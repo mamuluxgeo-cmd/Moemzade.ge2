@@ -531,6 +531,7 @@ body.modal-open { overflow: hidden; }
 .teacher-photo { position: relative; width: 100%; aspect-ratio: 4 / 3; flex: 0 0 auto; overflow: hidden; background: linear-gradient(145deg, #d9f4ea, #f5e8c8); border: 1px solid #d9d2c0; border-radius: 13px 13px 8px 8px; }
 .teacher-photo::after { position: absolute; inset: 0; content: ""; border: 5px solid rgb(255 255 255 / 45%); border-radius: inherit; pointer-events: none; }
 .teacher-photo img { width: 100%; height: 100%; object-fit: cover; object-position: center 25%; }
+.teacher-photo-backdrop { display: none; }
 .teacher-card-body { position: relative; display: flex; min-height: 174px; flex: 1; flex-direction: column; margin-top: 7px; padding: 25px 10px 10px; background: repeating-linear-gradient(to bottom, transparent 0, transparent 27px, rgb(92 137 121 / 14%) 28px), linear-gradient(90deg, transparent 0, transparent 16px, rgb(210 102 91 / 18%) 17px, transparent 18px); border-radius: 4px 4px 10px 10px; }
 .teacher-category, .teacher-card-price { position: absolute; top: -15px; z-index: 2; display: inline-flex; min-height: 26px; align-items: center; margin: 0; padding: 5px 9px; border: 1px solid rgb(8 43 35 / 9%); border-radius: 7px 7px 3px 3px; box-shadow: 0 4px 8px rgb(26 50 42 / 8%); font-size: 10px; line-height: 1.15; text-transform: none; }
 .teacher-category { left: 8px; max-width: calc(68% - 8px); overflow: hidden; color: var(--green-950); background: #dff4eb; white-space: nowrap; text-overflow: ellipsis; }
@@ -553,6 +554,8 @@ body.modal-open { overflow: hidden; }
 .home-teacher-grid .teacher-card-clip { top: -6px; right: 10px; width: 9px; height: 23px; }
 .home-teacher-grid .teacher-photo { aspect-ratio: 16 / 10; border-radius: 9px 9px 6px 6px; }
 .home-teacher-grid .teacher-photo::after { border-width: 3px; }
+.home-teacher-grid .teacher-photo-backdrop { position: absolute; inset: -10px; z-index: 0; display: block; width: calc(100% + 20px); height: calc(100% + 20px); object-fit: cover; object-position: center; filter: blur(11px) saturate(.82); opacity: .62; transform: scale(1.08); }
+.home-teacher-grid .teacher-photo-main { position: relative; z-index: 1; object-fit: contain; object-position: center; filter: none; }
 .home-teacher-grid .teacher-card-body { min-height: 112px; margin-top: 4px; padding: 20px 7px 7px; background-size: auto 23px, auto; }
 .home-teacher-grid .teacher-category, .home-teacher-grid .teacher-card-price { top: -12px; min-height: 19px; padding: 3px 5px; border-radius: 5px; font-size: 7px; }
 .home-teacher-grid .teacher-category { left: 4px; max-width: calc(68% - 4px); }

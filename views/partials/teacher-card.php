@@ -4,7 +4,8 @@
         <span class="teacher-card-clip" aria-hidden="true"></span>
         <div class="teacher-photo">
             <?php if (!empty($item['photo_url'])): ?>
-                <img src="<?= e($item['photo_url']) ?>" alt="<?= e(localized($item, 'name')) ?>" loading="lazy" width="720" height="720">
+                <img class="teacher-photo-backdrop" src="<?= e($item['photo_url']) ?>" alt="" aria-hidden="true" loading="lazy" width="720" height="720">
+                <img class="teacher-photo-main" src="<?= e($item['photo_url']) ?>" alt="<?= e(localized($item, 'name')) ?>" loading="lazy" width="720" height="720">
             <?php else: ?>
                 <span aria-hidden="true"><?= e(mb_substr(localized($item, 'name'), 0, 1, 'UTF-8')) ?></span>
             <?php endif; ?>
