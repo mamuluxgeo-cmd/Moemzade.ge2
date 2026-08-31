@@ -388,6 +388,27 @@
     const photoInput = registerForm.querySelector('[data-photo-input]');
     const photoPreview = registerForm.querySelector('[data-photo-preview]');
     const photoPlaceholder = registerForm.querySelector('[data-photo-placeholder]');
+    const photoFrame = registerForm.querySelector('[data-photo-frame]');
+    const photoControls = registerForm.querySelector('[data-photo-controls]');
+    const cropXInput = registerForm.querySelector('[data-photo-x]');
+    const cropYInput = registerForm.querySelector('[data-photo-y]');
+    const cropZoomInput = registerForm.querySelector('[data-photo-zoom-value]');
+    const zoomSlider = registerForm.querySelector('[data-photo-zoom]');
+    const resetCrop = registerForm.querySelector('[data-photo-reset]');
+    let cropX = 50;
+    let cropY = 50;
+    let cropZoom = 1;
+    let dragStart = null;
+    const renderCrop = () => {
+      if (!photoPreview) return;
+      photoPreview.style.setProperty('--crop-x', `${cropX}%`);
+      photoPreview.style.setProperty('--crop-y', `${cropY}%`);
+      photoPreview.style.setProperty('--crop-zoom', cropZoom);
+      if (cropXInput) cropXInput.value = cropX.toFixed(2);
+      if (cropYInput) cropYInput.value = cropY.toFixed(2);
+      if (cropZoomInput) cropZoomInput.value = cropZoom.toFixed(2);
+      if (zoomSlider) zoomSlider.value = cropZoom;
+    };
     if (photoInput && photoPreview) {
       photoInput.addEventListener('change', () => {
         const file = photoInput.files && photoInput.files[0];
@@ -396,8 +417,37 @@
         photoPreview.src = objectUrl;
         photoPreview.hidden = false;
         if (photoPlaceholder) photoPlaceholder.hidden = true;
+        if (photoControls) photoControls.hidden = false;
+        cropX = 50;
+        cropY = 50;
+        cropZoom = 1;
+        renderCrop();
         photoPreview.onload = () => URL.revokeObjectURL(objectUrl);
       });
+    }
+    if (zoomSlider) zoomSlider.addEventListener('input', () => {
+      cropZoom = Math.max(1, Math.min(2.5, Number(zoomSlider.value) || 1));
+      renderCrop();
+    });
+    if (resetCrop) resetCrop.addEventListener('click', () => {
+      cropX = 50; cropY = 50; cropZoom = 1; renderCrop();
+    });
+    if (photoFrame) {
+      photoFrame.addEventListener('pointerdown', (event) => {
+        if (!photoPreview || photoPreview.hidden) return;
+        dragStart = { pointerX: event.clientX, pointerY: event.clientY, cropX, cropY };
+        photoFrame.setPointerCapture(event.pointerId);
+      });
+      photoFrame.addEventListener('pointermove', (event) => {
+        if (!dragStart) return;
+        const rect = photoFrame.getBoundingClientRect();
+        cropX = Math.max(0, Math.min(100, dragStart.cropX - ((event.clientX - dragStart.pointerX) / rect.width) * 100));
+        cropY = Math.max(0, Math.min(100, dragStart.cropY - ((event.clientY - dragStart.pointerY) / rect.height) * 100));
+        renderCrop();
+      });
+      const endCropDrag = () => { dragStart = null; };
+      photoFrame.addEventListener('pointerup', endCropDrag);
+      photoFrame.addEventListener('pointercancel', endCropDrag);
     }
 
     registerForm.addEventListener('submit', (event) => {
