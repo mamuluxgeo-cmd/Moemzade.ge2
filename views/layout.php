@@ -29,7 +29,7 @@ $ogImage = $ogImage ?? absolute_url('/assets/images/social-preview.png?v=2026083
     <meta name="theme-color" content="#0f6e56">
     <link rel="icon" type="image/svg+xml" href="<?= asset('assets/images/favicon.svg') ?>">
     <link rel="preload" href="<?= asset('assets/fonts/bpg-mrgvlovani-caps-2010.ttf') ?>" as="font" type="font/ttf" crossorigin>
-    <link rel="stylesheet" href="<?= asset('assets/css/app.css?v=20260830-mobile-three-v1') ?>">
+    <link rel="stylesheet" href="<?= asset('assets/css/app.css?v=20260831-photo-fit-v1') ?>">
     <?php if (!empty($structuredData)): ?><script type="application/ld+json"><?= str_replace('</', '<\/', (string) $structuredData) ?></script><?php endif; ?>
 </head>
 <body class="<?= trim((is_admin() ? 'admin-session ' : '') . (str_starts_with($requestPath, '/admin') && $requestPath !== '/admin/login' ? 'admin-area' : '')) ?>">
