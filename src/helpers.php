@@ -155,6 +155,37 @@ function visitor_hash(): string
     return hash_hmac('sha256', $identifier, (string) $config['key']);
 }
 
+function analytics_request_is_human(): bool
+{
+    $userAgent = trim((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''));
+    if ($userAgent === '') return false;
+
+    $automated = '/bot|crawler|spider|slurp|bingpreview|facebookexternalhit|twitterbot|linkedinbot|whatsapp|telegrambot|discordbot|applebot|yandex|baidu|duckduckbot|semrush|ahrefs|mj12bot|dotbot|petalbot|bytespider|headlesschrome|lighthouse|pagespeed|pingdom|uptimerobot|statuscake|monitoring|curl|wget|python-requests|go-http-client|java\//i';
+    if (preg_match($automated, $userAgent) === 1) return false;
+
+    $purpose = strtolower(trim((string) ($_SERVER['HTTP_PURPOSE'] ?? $_SERVER['HTTP_SEC_PURPOSE'] ?? '')));
+    if (str_contains($purpose, 'prefetch') || str_contains($purpose, 'preview')) return false;
+
+    return true;
+}
+
+function analytics_allow_event(string $scope, string $fingerprint, int $minimumInterval = 20): bool
+{
+    $now = time();
+    $key = hash('sha256', $scope . '|' . $fingerprint);
+    $events = is_array($_SESSION['_analytics_events'] ?? null) ? $_SESSION['_analytics_events'] : [];
+    $lastSeen = (int) ($events[$key] ?? 0);
+    if ($lastSeen > 0 && ($now - $lastSeen) < max(1, $minimumInterval)) return false;
+
+    $events[$key] = $now;
+    if (count($events) > 100) {
+        $cutoff = $now - 3600;
+        $events = array_filter($events, static fn (mixed $timestamp): bool => (int) $timestamp >= $cutoff);
+    }
+    $_SESSION['_analytics_events'] = $events;
+    return true;
+}
+
 function is_admin(): bool
 {
     return ($_SESSION['admin_authenticated'] ?? false) === true;

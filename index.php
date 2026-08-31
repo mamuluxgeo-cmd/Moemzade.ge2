@@ -10,6 +10,7 @@ $method = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));
 $path = parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH) ?: '/';
 $path = '/' . trim(rawurldecode($path), '/');
 $path = $path === '/' ? '/' : rtrim($path, '/');
+$repository->initializeHumanAnalytics();
 
 try {
     if ($method === 'GET' && $path === '/robots.txt') {
@@ -42,7 +43,10 @@ try {
         exit;
     }
 
-    if ($method === 'GET' && !str_starts_with($path, '/admin')) {
+    $trackableVisitor = analytics_request_is_human();
+
+    if ($method === 'GET' && !str_starts_with($path, '/admin') && $trackableVisitor
+        && analytics_allow_event('page', $path, 20)) {
         $repository->trackPageView(visitor_hash(), $path);
     }
 
@@ -72,7 +76,9 @@ try {
         $perPage = 24;
         $total = $repository->countTeachers($filters);
         $teachers = $repository->searchTeachers($filters, $perPage, ($page - 1) * $perPage);
-        if (array_filter($filters, static fn (string $value): bool => $value !== '')) {
+        if ($page === 1 && $trackableVisitor
+            && array_filter($filters, static fn (string $value): bool => $value !== '')
+            && analytics_allow_event('search', json_encode($filters, JSON_UNESCAPED_UNICODE) ?: '', 30)) {
             $repository->logSearch(visitor_hash(), $filters, $total);
         }
         view('teachers', [
@@ -300,7 +306,9 @@ try {
         if ($teacher === null) {
             view('error', ['pageTitle' => '404', 'message' => t('search.empty')], 404);
         }
-        $repository->trackTeacherView((int) $teacher['id'], visitor_hash());
+        if ($trackableVisitor && analytics_allow_event('teacher', (string) $teacher['id'], 60)) {
+            $repository->trackTeacherView((int) $teacher['id'], visitor_hash());
+        }
         $teacherName = localized($teacher, 'name');
         $teacherBio = trim(localized($teacher, 'bio'));
         $teacherUrl = absolute_url('/teacher/' . rawurlencode((string) $teacher['slug']));

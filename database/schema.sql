@@ -218,3 +218,9 @@ CREATE TABLE IF NOT EXISTS teacher_daily_visitors (
     KEY teacher_daily_views_teacher_idx (teacher_id, view_date),
     CONSTRAINT teacher_daily_views_teacher_fk FOREIGN KEY (teacher_id) REFERENCES teachers (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS analytics_resets (
+    reset_key VARCHAR(100) NOT NULL,
+    reset_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (reset_key)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
