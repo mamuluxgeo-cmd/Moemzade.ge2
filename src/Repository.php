@@ -1503,6 +1503,49 @@ final class Repository
         return array_map('intval', $row);
     }
 
+    public function initializeHumanAnalytics(): void
+    {
+        $resetKey = 'human-analytics-v1-20260831';
+        $localMarker = dirname(__DIR__) . '/storage/' . $resetKey . '.done';
+        if (is_file($localMarker)) return;
+
+        if ($this->db->getAttribute(PDO::ATTR_DRIVER_NAME) === 'sqlite') {
+            $this->db->exec(
+                'CREATE TABLE IF NOT EXISTS analytics_resets (
+                    reset_key TEXT PRIMARY KEY,
+                    reset_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+                )'
+            );
+            $marker = $this->db->prepare('INSERT OR IGNORE INTO analytics_resets (reset_key) VALUES (:reset_key)');
+        } else {
+            $this->db->exec(
+                'CREATE TABLE IF NOT EXISTS analytics_resets (
+                    reset_key VARCHAR(100) NOT NULL PRIMARY KEY,
+                    reset_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+            );
+            $marker = $this->db->prepare('INSERT IGNORE INTO analytics_resets (reset_key) VALUES (:reset_key)');
+        }
+
+        $this->db->beginTransaction();
+        try {
+            $marker->execute(['reset_key' => $resetKey]);
+            if ($marker->rowCount() === 1) {
+                foreach (['teacher_daily_visitors', 'page_views_daily', 'site_daily_visitors', 'search_events', 'match_requests'] as $table) {
+                    $this->db->exec("DELETE FROM {$table}");
+                }
+            }
+            $this->db->commit();
+            $markerDirectory = dirname($localMarker);
+            if (is_dir($markerDirectory) || @mkdir($markerDirectory, 0775, true)) {
+                @file_put_contents($localMarker, date(DATE_ATOM), LOCK_EX);
+            }
+        } catch (\Throwable $exception) {
+            if ($this->db->inTransaction()) $this->db->rollBack();
+            throw $exception;
+        }
+    }
+
     /** @return list<array<string, mixed>> */
     public function topTeachers(int $limit = 10): array
     {
