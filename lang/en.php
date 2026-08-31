@@ -45,7 +45,7 @@ return [
     'register.bio_placeholder' => 'Describe your experience, lesson format and expected outcomes…', 'register.bio_hint' => 'At least 30 characters.',
     'register.languages_placeholder' => 'For example: Georgian, English', 'register.photo' => 'Profile photo',
     'register.photo_choose' => 'Choose or take a photo', 'register.photo_help' => 'JPEG, PNG or WebP — up to :size MB.',
-    'register.photo_preview' => 'Selected photo preview', 'register.step3_title' => 'Contact information',
+    'register.photo_preview' => 'Selected photo preview', 'register.photo_crop_help' => 'Drag the photo inside the frame and adjust how it will appear on cards. The full photo remains available on the profile.', 'register.photo_zoom' => 'Zoom', 'register.photo_reset' => 'Reset', 'register.step3_title' => 'Contact information',
     'register.step3_text' => 'Students will contact you using this number.', 'register.review_title' => 'What happens next?',
     'register.review_text' => 'Your application enters the moderation queue. It stays private until approved.',
     'register.consent' => 'I agree to the site', 'register.submit' => 'Submit profile',

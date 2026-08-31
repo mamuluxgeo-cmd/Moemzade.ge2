@@ -45,7 +45,7 @@ return [
     'register.bio_placeholder' => 'Расскажите об опыте, формате занятий и ожидаемых результатах…', 'register.bio_hint' => 'Не менее 30 символов.',
     'register.languages_placeholder' => 'Например: грузинский, английский', 'register.photo' => 'Фото профиля',
     'register.photo_choose' => 'Выбрать или сделать фото', 'register.photo_help' => 'JPEG, PNG или WebP — до :size МБ.',
-    'register.photo_preview' => 'Предпросмотр выбранного фото', 'register.step3_title' => 'Контактная информация',
+    'register.photo_preview' => 'Предпросмотр выбранного фото', 'register.photo_crop_help' => 'Перетащите фото внутри рамки и настройте его вид в карточке. Полная фотография останется доступна в профиле.', 'register.photo_zoom' => 'Масштаб', 'register.photo_reset' => 'Сбросить', 'register.step3_title' => 'Контактная информация',
     'register.step3_text' => 'Ученики свяжутся с вами по этому номеру.', 'register.review_title' => 'Что будет дальше?',
     'register.review_text' => 'Заявка попадёт в очередь модерации и не будет видна до одобрения.',
     'register.consent' => 'Я принимаю', 'register.submit' => 'Отправить профиль',

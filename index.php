@@ -229,8 +229,13 @@ try {
         $teacherId = 0;
         $storedVariants = [];
         try {
+            $hasPhotoUpload = isset($_FILES['photo'])
+                && ($_FILES['photo']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE;
+            if (!$hasPhotoUpload) {
+                unset($submission['card_photo_x'], $submission['card_photo_y'], $submission['card_photo_zoom']);
+            }
             $teacherId = $repository->saveTeacher($submission);
-            if (isset($_FILES['photo']) && ($_FILES['photo']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
+            if ($hasPhotoUpload) {
                 $manager = new MediaManager($config['media']);
                 $storedVariants = $manager->storeTeacherPhoto($teacherId, $_FILES['photo']);
                 $repository->replaceTeacherMedia($teacherId, $storedVariants);
@@ -948,6 +953,9 @@ function validate_public_registration(array $source): array
     $price = trim((string) ($source['price_from'] ?? ''));
     $formatOnline = !empty($source['format_online']);
     $formatInPerson = !empty($source['format_in_person']);
+    $cropX = is_numeric($source['card_photo_x'] ?? null) ? max(0, min(100, (float) $source['card_photo_x'])) : 50;
+    $cropY = is_numeric($source['card_photo_y'] ?? null) ? max(0, min(100, (float) $source['card_photo_y'])) : 50;
+    $cropZoom = is_numeric($source['card_photo_zoom'] ?? null) ? max(1, min(2.5, (float) $source['card_photo_zoom'])) : 1;
     $errors = [];
 
     if (mb_strlen($name, 'UTF-8') < 2) $errors['name_ka'] = t('register.error_name');
@@ -983,6 +991,9 @@ function validate_public_registration(array $source): array
         'phone' => $phone,
         'facebook_url' => '',
         'instagram_url' => '',
+        'card_photo_x' => $cropX,
+        'card_photo_y' => $cropY,
+        'card_photo_zoom' => $cropZoom,
         'status' => 'draft',
     ], $errors];
 }

@@ -13,6 +13,7 @@ final class Repository
     private ?array $filterOptionsCache = null;
     private bool $categoryMediaReady = false;
     private bool $categoryHierarchyReady = false;
+    private bool $teacherCardCropReady = false;
 
     /** @param array<string, mixed> $taxonomy */
     public function __construct(private readonly PDO $db, private readonly array $taxonomy = [])
@@ -1624,6 +1625,7 @@ final class Repository
     /** @param array<string, mixed> $data */
     public function saveTeacher(array $data, ?int $id = null): int
     {
+        $this->ensureTeacherCardCropSchema();
         $name = trim((string) ($data['name_ka'] ?? $data['name_en'] ?? $data['name_ru'] ?? ''));
         if ($name === '') {
             throw new RuntimeException('Teacher name is required.');
@@ -1661,6 +1663,11 @@ final class Repository
             'instagram_url' => trim((string) ($data['instagram_url'] ?? '')),
             'status' => $status,
         ];
+        if (array_key_exists('card_photo_x', $data)) {
+            $fields['card_photo_x'] = max(0, min(100, (float) $data['card_photo_x']));
+            $fields['card_photo_y'] = max(0, min(100, (float) ($data['card_photo_y'] ?? 50)));
+            $fields['card_photo_zoom'] = max(1, min(2.5, (float) ($data['card_photo_zoom'] ?? 1)));
+        }
         $this->assertCatalogSelection($fields['category'], $fields['region'], $fields['settlement']);
 
         if ($id === null) {
@@ -1682,6 +1689,39 @@ final class Repository
         );
         $statement->execute($fields + ['publish_now' => $status === 'published' ? 1 : 0, 'id' => $id]);
         return $id;
+    }
+
+    private function ensureTeacherCardCropSchema(): void
+    {
+        if ($this->teacherCardCropReady) return;
+
+        $definitions = [
+            'card_photo_x' => 'DECIMAL(5,2) NULL DEFAULT NULL',
+            'card_photo_y' => 'DECIMAL(5,2) NULL DEFAULT NULL',
+            'card_photo_zoom' => 'DECIMAL(4,2) NULL DEFAULT NULL',
+        ];
+        if ($this->db->getAttribute(PDO::ATTR_DRIVER_NAME) === 'sqlite') {
+            $columns = $this->db->query('PRAGMA table_info(teachers)')->fetchAll();
+            $names = array_fill_keys(array_map(static fn (array $column): string => (string) $column['name'], $columns), true);
+            foreach ($definitions as $column => $definition) {
+                if (!isset($names[$column])) $this->db->exec("ALTER TABLE teachers ADD COLUMN {$column} REAL NULL");
+            }
+            $this->teacherCardCropReady = true;
+            return;
+        }
+
+        $databaseName = (string) $this->db->query('SELECT DATABASE()')->fetchColumn();
+        $exists = $this->db->prepare(
+            'SELECT COUNT(*) FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = :schema_name AND TABLE_NAME = :table_name AND COLUMN_NAME = :column_name'
+        );
+        foreach ($definitions as $column => $definition) {
+            $exists->execute(['schema_name' => $databaseName, 'table_name' => 'teachers', 'column_name' => $column]);
+            if ((int) $exists->fetchColumn() === 0) {
+                $this->db->exec("ALTER TABLE teachers ADD COLUMN {$column} {$definition}");
+            }
+        }
+        $this->teacherCardCropReady = true;
     }
 
     /** @param array<string, mixed> $data */
